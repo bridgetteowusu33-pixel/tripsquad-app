@@ -1,0 +1,790 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL ?? '';
+const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
+
+// Vibes must match the Flutter app exactly
+const vibes = [
+  { id: 'culture',   label: 'Culture',     emoji: '🏛️', desc: 'Art, history, food scenes' },
+  { id: 'city',      label: 'City Break',  emoji: '🌆', desc: 'Streets, cafés, energy' },
+  { id: 'beach',     label: 'Beach',       emoji: '🏖️', desc: 'Sun, sea, zero plans' },
+  { id: 'food',      label: 'Food & Drink',emoji: '🍜', desc: 'Markets, restaurants, wine' },
+  { id: 'party',     label: 'Party',       emoji: '🎉', desc: 'Nightlife, music, chaos' },
+  { id: 'adventure', label: 'Adventure',   emoji: '🏔️', desc: 'Hikes, thrills, outdoors' },
+  { id: 'nature',    label: 'Nature',      emoji: '🌿', desc: 'Forests, escape' },
+  { id: 'wellness',  label: 'Wellness',    emoji: '🧘', desc: 'Spas, slow mornings' },
+];
+
+const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','🎨','🦊','🐬'];
+---
+
+<BaseLayout title="Join the trip — TripSquad" description="Your squad is planning a trip. Fill in your preferences.">
+
+<main class="join-main">
+  <div class="container">
+
+    <!-- Loading state -->
+    <div id="loading" class="join-loading">
+      <div class="join-logo">✈️</div>
+      <p>Loading trip details...</p>
+    </div>
+
+    <!-- Error state -->
+    <div id="error" class="join-error" style="display:none;">
+      <div class="join-logo">😕</div>
+      <h1>Link not found</h1>
+      <p id="error-msg">This invite link may have expired or is invalid.</p>
+      <a href="/" class="join-btn">Learn about TripSquad</a>
+    </div>
+
+    <!-- Form -->
+    <div id="form-container" style="display:none;">
+
+      <!-- Header -->
+      <div class="join-header">
+        <div class="join-logo">✈️</div>
+        <h1 id="trip-name" class="join-title">Loading...</h1>
+        <p class="join-sub">Fill this in so the squad can plan around you. Takes about 60 seconds.</p>
+        <div class="join-badge">🔒 Anonymous — nobody sees your budget</div>
+      </div>
+
+      <!-- Progress -->
+      <div class="join-progress">
+        <div class="join-progress-bar" id="progress-bar" style="width:20%"></div>
+      </div>
+      <p class="join-step-label" id="step-label">Step 1 of 5</p>
+
+      <!-- Step 1: Nickname + Emoji -->
+      <div class="join-step" id="step-1">
+        <h2>What should we call you?</h2>
+        <input type="text" id="nickname" class="join-input" placeholder="Your name or nickname" maxlength="20" autofocus />
+        <h3>Pick your avatar</h3>
+        <div class="join-emoji-grid" id="emoji-grid">
+          {emojis.map((e, i) => (
+            <button class={`join-emoji-btn${i === 0 ? ' selected' : ''}`} data-emoji={e} type="button">{e}</button>
+          ))}
+        </div>
+      </div>
+
+      <!-- Step 2: Budget -->
+      <div class="join-step" id="step-2" style="display:none;">
+        <h2>What is your budget per person?</h2>
+        <p class="join-hint">This stays anonymous. The squad only sees the group range.</p>
+        <div class="join-budget-row">
+          <div class="join-budget-field">
+            <label>Minimum</label>
+            <div class="join-input-wrap">
+              <span class="join-currency">$</span>
+              <input type="number" id="budget-min" class="join-input join-input-budget" placeholder="500" min="0" />
+            </div>
+          </div>
+          <div class="join-budget-field">
+            <label>Maximum</label>
+            <div class="join-input-wrap">
+              <span class="join-currency">$</span>
+              <input type="number" id="budget-max" class="join-input join-input-budget" placeholder="2000" min="0" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Vibes -->
+      <div class="join-step" id="step-3" style="display:none;">
+        <h2>What is your vibe?</h2>
+        <p class="join-hint">Pick up to 3.</p>
+        <div class="join-vibe-grid">
+          {vibes.map((v) => (
+            <button class="join-vibe-btn" data-vibe={v.id} type="button">
+              <span class="join-vibe-emoji">{v.emoji}</span>
+              <span class="join-vibe-label">{v.label}</span>
+              <span class="join-vibe-desc">{v.desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <!-- Step 4: Destination preferences -->
+      <div class="join-step" id="step-4" style="display:none;">
+        <h2>Where do you want to go?</h2>
+        <p class="join-hint">Pick from the host's shortlist or suggest your own.</p>
+        <div class="join-dest-grid" id="dest-grid">
+          <!-- Populated by JS from trip data -->
+        </div>
+        <div class="join-custom-dest">
+          <input type="text" id="custom-dest" class="join-input" placeholder="Suggest a destination..." />
+          <button type="button" id="add-dest-btn" class="join-add-btn">+</button>
+        </div>
+      </div>
+
+      <!-- Step 5: Confirm -->
+      <div class="join-step" id="step-5" style="display:none;">
+        <h2>Ready to join?</h2>
+        <div class="join-summary" id="summary"></div>
+      </div>
+
+      <!-- Nav buttons -->
+      <div class="join-nav">
+        <button type="button" id="back-btn" class="join-btn join-btn-ghost" style="display:none;">← Back</button>
+        <button type="button" id="next-btn" class="join-btn join-btn-primary">Next →</button>
+      </div>
+
+    </div>
+
+    <!-- Success state -->
+    <div id="success" class="join-success" style="display:none;">
+      <div class="join-logo" style="font-size:64px;">🎉</div>
+      <h1>You are in!</h1>
+      <p>Your preferences have been submitted. The host will generate trip options once everyone responds.</p>
+      <div class="join-success-card" id="success-card"></div>
+      <a href="/" class="join-btn join-btn-primary" style="margin-top:24px;">Get the TripSquad app</a>
+    </div>
+
+  </div>
+</main>
+
+</BaseLayout>
+
+<script define:vars={{ SUPABASE_URL, SUPABASE_ANON_KEY }}>
+  // State
+  let step = 1;
+  let tripId = '';
+  let tripData = null;
+  let selectedEmoji = '😎';
+  let selectedVibes = [];
+  let selectedDests = [];
+
+  const $  = (s) => document.querySelector(s);
+  const $$ = (s) => document.querySelectorAll(s);
+
+  // Extract token from query param: /join/?t=abc12345
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get('t') || '';
+
+  // ── Load trip ──────────────────────────────────────────────
+  async function loadTrip() {
+    if (!token) {
+      showError('No invite token found. Check your link.');
+      return;
+    }
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/trips?invite_token=eq.${token}&select=id,name,vibes,destination_shortlist,created_at`,
+        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+      );
+      const data = await res.json();
+
+      if (!data || data.length === 0) {
+        showError('This invite link is not valid.');
+        return;
+      }
+
+      const trip = data[0];
+
+      // Check 7-day expiry
+      const created = new Date(trip.created_at);
+      const now = new Date();
+      const daysDiff = (now - created) / (1000 * 60 * 60 * 24);
+      if (daysDiff > 7) {
+        showError('This invite link has expired. Ask the host for a new one.');
+        return;
+      }
+
+      tripId = trip.id;
+      tripData = trip;
+      $('#trip-name').textContent = trip.name;
+
+      // Populate destination grid from host shortlist
+      const grid = $('#dest-grid');
+      grid.innerHTML = '';
+      (trip.destination_shortlist || []).forEach((dest) => {
+        const btn = document.createElement('button');
+        btn.className = 'join-dest-btn';
+        btn.type = 'button';
+        btn.textContent = dest;
+        btn.dataset.dest = dest;
+        btn.addEventListener('click', () => {
+          btn.classList.toggle('selected');
+          if (btn.classList.contains('selected')) {
+            selectedDests.push(dest);
+          } else {
+            selectedDests = selectedDests.filter(d => d !== dest);
+          }
+        });
+        grid.appendChild(btn);
+      });
+
+      $('#loading').style.display = 'none';
+      $('#form-container').style.display = 'block';
+    } catch (e) {
+      showError('Something went wrong. Please try again.');
+    }
+  }
+
+  function showError(msg) {
+    $('#loading').style.display = 'none';
+    $('#error').style.display = 'block';
+    $('#error-msg').textContent = msg;
+  }
+
+  // ── Step navigation ────────────────────────────────────────
+  function showStep(n) {
+    step = n;
+    for (let i = 1; i <= 5; i++) {
+      const el = $(`#step-${i}`);
+      if (el) el.style.display = i === n ? 'block' : 'none';
+    }
+    $('#back-btn').style.display = n > 1 ? 'inline-flex' : 'none';
+    $('#next-btn').textContent = n === 5 ? 'Submit ✦' : 'Next →';
+    $('#progress-bar').style.width = `${n * 20}%`;
+    $('#step-label').textContent = `Step ${n} of 5`;
+
+    if (n === 5) buildSummary();
+  }
+
+  function buildSummary() {
+    const nickname = $('#nickname').value.trim() || 'Anonymous';
+    const bMin = $('#budget-min').value || '—';
+    const bMax = $('#budget-max').value || '—';
+    $('#summary').innerHTML = `
+      <div class="join-summary-row"><span>Name</span><strong>${nickname} ${selectedEmoji}</strong></div>
+      <div class="join-summary-row"><span>Budget</span><strong>$${bMin} – $${bMax}</strong></div>
+      <div class="join-summary-row"><span>Vibes</span><strong>${selectedVibes.join(', ') || 'None'}</strong></div>
+      <div class="join-summary-row"><span>Destinations</span><strong>${selectedDests.join(', ') || 'None'}</strong></div>
+    `;
+  }
+
+  // ── Validation ─────────────────────────────────────────────
+  function validateStep() {
+    if (step === 1) {
+      const name = $('#nickname').value.trim();
+      if (!name) { alert('Enter your name or nickname.'); return false; }
+    }
+    if (step === 2) {
+      const min = parseInt($('#budget-min').value);
+      const max = parseInt($('#budget-max').value);
+      if (isNaN(min) || isNaN(max)) { alert('Enter your budget range.'); return false; }
+      if (min > max) { alert('Minimum budget cannot exceed maximum.'); return false; }
+    }
+    if (step === 3 && selectedVibes.length === 0) {
+      alert('Pick at least one vibe.'); return false;
+    }
+    return true;
+  }
+
+  // ── Submit ─────────────────────────────────────────────────
+  async function submitForm() {
+    const nickname = $('#nickname').value.trim();
+    const budgetMin = parseInt($('#budget-min').value) || 0;
+    const budgetMax = parseInt($('#budget-max').value) || 0;
+
+    $('#next-btn').textContent = 'Submitting...';
+    $('#next-btn').disabled = true;
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/squad_members`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify({
+          trip_id: tripId,
+          nickname,
+          emoji: selectedEmoji,
+          role: 'member',
+          status: 'submitted',
+          vibes: selectedVibes,
+          budget_min: budgetMin,
+          budget_max: budgetMax,
+          destination_prefs: selectedDests,
+          responded_at: new Date().toISOString(),
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Submission failed');
+      }
+
+      // Show success
+      $('#form-container').style.display = 'none';
+      $('#success').style.display = 'block';
+      $('#success-card').innerHTML = `
+        <div class="join-summary-row"><span>Trip</span><strong>${tripData.name}</strong></div>
+        <div class="join-summary-row"><span>You</span><strong>${nickname} ${selectedEmoji}</strong></div>
+        <div class="join-summary-row"><span>Vibes</span><strong>${selectedVibes.join(', ')}</strong></div>
+      `;
+    } catch (e) {
+      alert('Something went wrong: ' + e.message);
+      $('#next-btn').textContent = 'Submit ✦';
+      $('#next-btn').disabled = false;
+    }
+  }
+
+  // ── Event listeners ────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    loadTrip();
+
+    // Emoji selection
+    $$('.join-emoji-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        $$('.join-emoji-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedEmoji = btn.dataset.emoji;
+      });
+    });
+
+    // Vibe selection (max 3)
+    $$('.join-vibe-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const vibe = btn.dataset.vibe;
+        if (btn.classList.contains('selected')) {
+          btn.classList.remove('selected');
+          selectedVibes = selectedVibes.filter(v => v !== vibe);
+        } else if (selectedVibes.length < 3) {
+          btn.classList.add('selected');
+          selectedVibes.push(vibe);
+        }
+      });
+    });
+
+    // Custom destination
+    $('#add-dest-btn').addEventListener('click', () => {
+      const input = $('#custom-dest');
+      const val = input.value.trim();
+      if (!val) return;
+      selectedDests.push(val);
+      const btn = document.createElement('button');
+      btn.className = 'join-dest-btn selected';
+      btn.type = 'button';
+      btn.textContent = val;
+      btn.dataset.dest = val;
+      btn.addEventListener('click', () => {
+        btn.classList.toggle('selected');
+        if (!btn.classList.contains('selected')) {
+          selectedDests = selectedDests.filter(d => d !== val);
+        } else {
+          selectedDests.push(val);
+        }
+      });
+      $('#dest-grid').appendChild(btn);
+      input.value = '';
+    });
+
+    // Next / Back
+    $('#next-btn').addEventListener('click', () => {
+      if (!validateStep()) return;
+      if (step === 5) { submitForm(); return; }
+      showStep(step + 1);
+    });
+
+    $('#back-btn').addEventListener('click', () => {
+      if (step > 1) showStep(step - 1);
+    });
+  });
+</script>
+
+<style>
+  .join-main {
+    min-height: 100vh;
+    padding: 60px 0 80px;
+    position: relative;
+  }
+
+  .join-main::before {
+    content: '';
+    position: absolute;
+    top: -100px;
+    left: -100px;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(204, 255, 69, 0.08), transparent 70%);
+    pointer-events: none;
+  }
+
+  .join-logo {
+    font-size: 48px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  /* ── Loading / Error / Success ── */
+  .join-loading, .join-error, .join-success {
+    text-align: center;
+    padding: 80px 0;
+  }
+
+  .join-loading p, .join-error p, .join-success p {
+    color: var(--ts-text2);
+    font-size: 16px;
+    margin-top: 8px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
+  }
+
+  .join-error h1, .join-success h1 {
+    font-family: var(--font-heading);
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+
+  .join-success h1 { color: var(--ts-lime); }
+
+  .join-success-card {
+    max-width: 360px;
+    margin: 24px auto 0;
+    background: var(--ts-s2);
+    border: 1px solid var(--ts-border2);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  /* ── Header ── */
+  .join-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .join-title {
+    font-family: var(--font-heading);
+    font-size: clamp(24px, 5vw, 32px);
+    font-weight: 800;
+    color: var(--ts-text);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+
+  .join-sub {
+    color: var(--ts-text2);
+    font-size: 15px;
+    line-height: 1.5;
+    max-width: 400px;
+    margin: 0 auto 12px;
+  }
+
+  .join-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    background: rgba(204, 255, 69, 0.08);
+    border: 1px solid rgba(204, 255, 69, 0.2);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ts-lime);
+  }
+
+  /* ── Progress ── */
+  .join-progress {
+    height: 4px;
+    background: var(--ts-s3);
+    border-radius: 2px;
+    margin: 24px 0 8px;
+    overflow: hidden;
+  }
+
+  .join-progress-bar {
+    height: 100%;
+    background: var(--ts-lime);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  .join-step-label {
+    font-family: var(--font-heading);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ts-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-bottom: 24px;
+  }
+
+  /* ── Steps ── */
+  .join-step h2 {
+    font-family: var(--font-heading);
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+
+  .join-step h3 {
+    font-family: var(--font-heading);
+    font-size: 16px;
+    font-weight: 700;
+    margin: 20px 0 10px;
+  }
+
+  .join-hint {
+    color: var(--ts-text2);
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+
+  /* ── Inputs ── */
+  .join-input {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--ts-s2);
+    border: 1px solid var(--ts-border2);
+    border-radius: 10px;
+    color: var(--ts-text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .join-input:focus {
+    border-color: var(--ts-lime);
+  }
+
+  .join-input::placeholder {
+    color: var(--ts-muted);
+  }
+
+  /* ── Budget ── */
+  .join-budget-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .join-budget-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ts-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+  }
+
+  .join-input-wrap {
+    position: relative;
+  }
+
+  .join-currency {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ts-muted);
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .join-input-budget {
+    padding-left: 32px;
+  }
+
+  /* ── Emoji grid ── */
+  .join-emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+  }
+
+  .join-emoji-btn {
+    width: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    background: var(--ts-s2);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+  }
+
+  .join-emoji-btn:hover { transform: scale(1.08); }
+  .join-emoji-btn.selected {
+    border-color: var(--ts-lime);
+    background: rgba(204, 255, 69, 0.1);
+  }
+
+  /* ── Vibe grid ── */
+  .join-vibe-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .join-vibe-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 14px 16px;
+    background: var(--ts-s2);
+    border: 1.5px solid var(--ts-border2);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    text-align: left;
+  }
+
+  .join-vibe-btn:hover { border-color: rgba(255, 255, 255, 0.2); }
+  .join-vibe-btn.selected {
+    border-color: var(--ts-lime);
+    background: rgba(204, 255, 69, 0.08);
+  }
+
+  .join-vibe-emoji { font-size: 22px; margin-bottom: 4px; }
+  .join-vibe-label {
+    font-family: var(--font-heading);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ts-text);
+  }
+  .join-vibe-desc {
+    font-size: 12px;
+    color: var(--ts-muted);
+    margin-top: 2px;
+  }
+
+  /* ── Destination grid ── */
+  .join-dest-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .join-dest-btn {
+    padding: 10px 16px;
+    background: var(--ts-s2);
+    border: 1.5px solid var(--ts-border2);
+    border-radius: 999px;
+    color: var(--ts-text2);
+    font-family: var(--font-body);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .join-dest-btn:hover { border-color: rgba(255, 255, 255, 0.2); }
+  .join-dest-btn.selected {
+    border-color: var(--ts-lime);
+    background: rgba(204, 255, 69, 0.1);
+    color: var(--ts-lime);
+  }
+
+  .join-custom-dest {
+    display: flex;
+    gap: 8px;
+  }
+
+  .join-add-btn {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ts-s2);
+    border: 1.5px solid var(--ts-border2);
+    border-radius: 10px;
+    color: var(--ts-lime);
+    font-size: 22px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .join-add-btn:hover { background: var(--ts-s3); }
+
+  /* ── Summary ── */
+  .join-summary {
+    background: var(--ts-s2);
+    border: 1px solid var(--ts-border2);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 12px;
+  }
+
+  .join-summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--ts-border);
+    font-size: 14px;
+  }
+
+  .join-summary-row:last-child { border-bottom: none; }
+  .join-summary-row span { color: var(--ts-muted); }
+  .join-summary-row strong { color: var(--ts-text); }
+
+  /* ── Buttons ── */
+  .join-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 28px;
+  }
+
+  .join-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 28px;
+    font-family: var(--font-heading);
+    font-size: 15px;
+    font-weight: 700;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .join-btn:hover { transform: translateY(-1px); }
+
+  .join-btn-primary {
+    background: var(--ts-lime);
+    color: var(--ts-bg);
+    box-shadow: 0 8px 24px rgba(204, 255, 69, 0.25);
+    margin-left: auto;
+  }
+
+  .join-btn-primary:hover {
+    box-shadow: 0 12px 32px rgba(204, 255, 69, 0.35);
+  }
+
+  .join-btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .join-btn-ghost {
+    background: transparent;
+    color: var(--ts-text2);
+    border: 1px solid var(--ts-border2);
+  }
+
+  .join-btn-ghost:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--ts-s2);
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 480px) {
+    .join-emoji-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    .join-vibe-grid {
+      grid-template-columns: 1fr;
+    }
+    .join-budget-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

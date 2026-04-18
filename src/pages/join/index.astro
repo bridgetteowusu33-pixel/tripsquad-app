@@ -222,13 +222,22 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
       btn.setAttribute('data-dest', dest);
       btn.style.cursor = 'pointer';
       btn.style.touchAction = 'manipulation';
-      btn.addEventListener('pointerdown', function(e) {
-        e.preventDefault();
-        this.classList.toggle('selected');
-        if (this.classList.contains('selected')) {
-          selectedDests.push(dest);
-        } else {
+      btn.addEventListener('click', function() {
+        const isSelected = this.getAttribute('data-selected') === 'true';
+        if (isSelected) {
+          this.setAttribute('data-selected', 'false');
+          this.style.borderColor = 'rgba(255,255,255,0.12)';
+          this.style.background = '#171728';
+          this.style.color = '#C0BCDA';
+          this.textContent = dest;
           selectedDests = selectedDests.filter(d => d !== dest);
+        } else {
+          this.setAttribute('data-selected', 'true');
+          this.style.borderColor = '#CCFF45';
+          this.style.background = 'rgba(204,255,69,0.15)';
+          this.style.color = '#CCFF45';
+          this.textContent = dest + ' ✓';
+          selectedDests.push(dest);
         }
       });
       grid.appendChild(btn);

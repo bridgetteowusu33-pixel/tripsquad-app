@@ -203,14 +203,16 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
         btn.type = 'button';
         btn.textContent = dest;
         btn.dataset.dest = dest;
-        btn.addEventListener('click', () => {
-          btn.classList.toggle('selected');
-          if (btn.classList.contains('selected')) {
+        btn.style.cursor = 'pointer';
+        btn.style.webkitTapHighlightColor = 'transparent';
+        btn.onclick = function() {
+          this.classList.toggle('selected');
+          if (this.classList.contains('selected')) {
             selectedDests.push(dest);
           } else {
             selectedDests = selectedDests.filter(d => d !== dest);
           }
-        });
+        };
         grid.appendChild(btn);
       });
 

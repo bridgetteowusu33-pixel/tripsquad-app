@@ -140,6 +140,48 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
       <a href="/" class="join-btn join-btn-primary" style="margin-top:24px;">Get the TripSquad app</a>
     </div>
 
+    <!-- Voting state -->
+    <div id="voting-container" style="display:none;">
+      <div class="join-header">
+        <div class="join-logo">🗳️</div>
+        <h1 id="vote-trip-name" class="join-title">Vote Now</h1>
+        <p class="join-sub">The squad's preferences are in. Pick your favourite destination.</p>
+      </div>
+
+      <div id="vote-nickname-step">
+        <h2>First, what is your name?</h2>
+        <input type="text" id="vote-nickname" class="join-input" placeholder="Your name or nickname" maxlength="20" />
+        <div style="height:16px"></div>
+        <button type="button" id="vote-nickname-btn" class="join-btn join-btn-primary" style="width:100%;">Next: See options →</button>
+      </div>
+
+      <div id="vote-options" style="display:none;">
+        <div id="vote-cards"></div>
+        <div style="height:20px"></div>
+        <button type="button" id="cast-vote-btn" class="join-btn join-btn-primary" style="width:100%;">Cast my vote ✦</button>
+      </div>
+    </div>
+
+    <!-- Vote success -->
+    <div id="vote-success" style="display:none;">
+      <div class="join-success">
+        <div class="join-logo" style="font-size:64px;">🎉</div>
+        <h1>Vote cast!</h1>
+        <p>Your vote has been submitted. The host will reveal the winner soon.</p>
+        <a href="/" class="join-btn join-btn-primary" style="margin-top:24px;">Get the TripSquad app</a>
+      </div>
+    </div>
+
+    <!-- Already revealed -->
+    <div id="revealed-container" style="display:none;">
+      <div class="join-success">
+        <div class="join-logo" style="font-size:64px;">✈️</div>
+        <h1 id="revealed-dest">Destination decided!</h1>
+        <p>The squad has spoken. Get the app to see the full itinerary.</p>
+        <a href="/" class="join-btn join-btn-primary" style="margin-top:24px;">Get the TripSquad app</a>
+      </div>
+    </div>
+
   </div>
 </main>
 
@@ -153,6 +195,9 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
   let selectedEmoji = '😎';
   let selectedVibes = [];
   let selectedDests = [];
+  let tripOptions = [];
+  let selectedVoteOptionId = null;
+  let voteNickname = '';
 
   const $  = (s) => document.querySelector(s);
   const $$ = (s) => document.querySelectorAll(s);
@@ -169,7 +214,7 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
     }
     try {
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/trips?invite_token=eq.${token}&select=id,name,vibes,destination_shortlist,created_at`,
+        `${SUPABASE_URL}/rest/v1/trips?invite_token=eq.${token}&select=id,name,status,vibes,destination_shortlist,selected_destination,selected_flag,created_at,trip_options(id,destination,country,flag,tagline,estimated_cost_pp,duration_days,vibe_match,compatibility_score,vote_count)`,
         { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
       );
       const data = await res.json();
@@ -195,6 +240,26 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
       $('#trip-name').textContent = trip.name;
 
       $('#loading').style.display = 'none';
+
+      // Route based on trip status
+      if (trip.status === 'revealed' || trip.status === 'planning' || trip.status === 'live' || trip.status === 'completed') {
+        // Trip already decided
+        const destName = trip.selected_destination || 'a destination';
+        const destFlag = trip.selected_flag || '✈️';
+        $('#revealed-dest').textContent = `${destFlag} ${destName}!`;
+        $('#revealed-container').style.display = 'block';
+        return;
+      }
+
+      if (trip.status === 'voting' && trip.trip_options && trip.trip_options.length > 0) {
+        // Show voting UI
+        $('#vote-trip-name').textContent = trip.name;
+        tripOptions = trip.trip_options;
+        $('#voting-container').style.display = 'block';
+        return;
+      }
+
+      // Default: show preference form
       $('#form-container').style.display = 'block';
     } catch (e) {
       showError('Something went wrong. Please try again.');
@@ -420,7 +485,112 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
     $('#back-btn').addEventListener('click', () => {
       if (step > 1) showStep(step - 1);
     });
+
+    // ── Voting flow ──────────────────────────────────────────
+    const nicknameBtn = $('#vote-nickname-btn');
+    if (nicknameBtn) {
+      nicknameBtn.addEventListener('click', () => {
+        voteNickname = $('#vote-nickname').value.trim();
+        if (!voteNickname) { alert('Enter your name.'); return; }
+        $('#vote-nickname-step').style.display = 'none';
+        renderVoteCards();
+        $('#vote-options').style.display = 'block';
+      });
+    }
+
+    const castBtn = $('#cast-vote-btn');
+    if (castBtn) {
+      castBtn.addEventListener('click', async () => {
+        if (!selectedVoteOptionId) { alert('Pick a destination first.'); return; }
+        castBtn.textContent = 'Submitting...';
+        castBtn.disabled = true;
+        try {
+          // First, submit as a squad member if not already
+          await fetch(`${SUPABASE_URL}/rest/v1/squad_members`, {
+            method: 'POST',
+            headers: {
+              apikey: SUPABASE_ANON_KEY,
+              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+              'Content-Type': 'application/json',
+              Prefer: 'return=minimal',
+            },
+            body: JSON.stringify({
+              trip_id: tripId,
+              nickname: voteNickname,
+              emoji: '😎',
+              role: 'member',
+              status: 'voted',
+              vibes: [],
+              budget_min: 0,
+              budget_max: 0,
+              destination_prefs: [],
+              responded_at: new Date().toISOString(),
+            }),
+          });
+          // Update the vote count on the selected option
+          const opt = tripOptions.find(o => o.id === selectedVoteOptionId);
+          if (opt) {
+            await fetch(`${SUPABASE_URL}/rest/v1/trip_options?id=eq.${opt.id}`, {
+              method: 'PATCH',
+              headers: {
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json',
+                Prefer: 'return=minimal',
+              },
+              body: JSON.stringify({ vote_count: (opt.vote_count || 0) + 1 }),
+            });
+          }
+          $('#voting-container').style.display = 'none';
+          $('#vote-success').style.display = 'block';
+        } catch (e) {
+          alert('Something went wrong: ' + e.message);
+          castBtn.textContent = 'Cast my vote ✦';
+          castBtn.disabled = false;
+        }
+      });
+    }
   });
+
+  function renderVoteCards() {
+    const container = $('#vote-cards');
+    container.innerHTML = '';
+    tripOptions.forEach((opt) => {
+      const card = document.createElement('div');
+      card.className = 'vote-card';
+      card.setAttribute('data-option-id', opt.id);
+      card.innerHTML = `
+        <div class="vote-card-header">
+          <span class="vote-card-flag">${opt.flag || '🌍'}</span>
+          <div>
+            <div class="vote-card-dest">${opt.destination}, ${opt.country}</div>
+            <div class="vote-card-tagline">${opt.tagline || ''}</div>
+          </div>
+        </div>
+        <div class="vote-card-pills">
+          <span class="vote-pill">~$${opt.estimated_cost_pp || '?'}</span>
+          <span class="vote-pill">${opt.duration_days || '?'} days</span>
+          ${(opt.vibe_match || []).map(v => `<span class="vote-pill">${v}</span>`).join('')}
+        </div>
+        <div class="vote-card-compat">
+          <span>AI compatibility</span>
+          <span>${Math.round((opt.compatibility_score || 0) * 100)}%</span>
+        </div>
+        <div class="vote-card-bar">
+          <div class="vote-card-bar-fill" style="width:${(opt.compatibility_score || 0) * 100}%"></div>
+        </div>
+      `;
+      card.addEventListener('click', () => {
+        $$('.vote-card').forEach(c => {
+          c.style.borderColor = 'rgba(255,255,255,0.12)';
+          c.querySelector('.vote-card-flag').style.boxShadow = 'none';
+        });
+        card.style.borderColor = '#CCFF45';
+        selectedVoteOptionId = opt.id;
+      });
+      container.appendChild(card);
+    });
+  }
 </script>
 
 <style>
@@ -816,6 +986,78 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
   }
 
   /* ── Responsive ── */
+  /* ── Vote Cards ── */
+  .vote-card {
+    padding: 20px;
+    background: var(--ts-s2);
+    border: 1.5px solid var(--ts-border2);
+    border-radius: 16px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .vote-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .vote-card-flag {
+    font-size: 32px;
+  }
+
+  .vote-card-dest {
+    font-family: var(--font-heading);
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ts-text);
+  }
+
+  .vote-card-tagline {
+    font-size: 13px;
+    color: var(--ts-text2);
+    margin-top: 2px;
+  }
+
+  .vote-card-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .vote-pill {
+    padding: 4px 10px;
+    background: var(--ts-s3);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ts-text2);
+  }
+
+  .vote-card-compat {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--ts-muted);
+    margin-bottom: 6px;
+  }
+
+  .vote-card-bar {
+    height: 4px;
+    background: var(--ts-s3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .vote-card-bar-fill {
+    height: 100%;
+    background: var(--ts-lime);
+    border-radius: 2px;
+  }
+
   @media (max-width: 480px) {
     .join-emoji-grid {
       grid-template-columns: repeat(4, 1fr);

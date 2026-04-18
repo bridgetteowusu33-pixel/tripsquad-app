@@ -378,15 +378,31 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
       if (!val) return;
       selectedDests.push(val);
       const btn = document.createElement('button');
-      btn.className = 'join-dest-btn selected';
+      btn.className = 'join-dest-btn';
       btn.type = 'button';
-      btn.textContent = val;
-      btn.dataset.dest = val;
-      btn.addEventListener('click', () => {
-        btn.classList.toggle('selected');
-        if (!btn.classList.contains('selected')) {
+      btn.textContent = val + ' ✓';
+      btn.setAttribute('data-dest', val);
+      btn.setAttribute('data-selected', 'true');
+      btn.style.borderColor = '#CCFF45';
+      btn.style.background = 'rgba(204,255,69,0.15)';
+      btn.style.color = '#CCFF45';
+      btn.style.cursor = 'pointer';
+      btn.style.touchAction = 'manipulation';
+      btn.addEventListener('click', function() {
+        const isSelected = this.getAttribute('data-selected') === 'true';
+        if (isSelected) {
+          this.setAttribute('data-selected', 'false');
+          this.style.borderColor = 'rgba(255,255,255,0.12)';
+          this.style.background = '#171728';
+          this.style.color = '#C0BCDA';
+          this.textContent = val;
           selectedDests = selectedDests.filter(d => d !== val);
         } else {
+          this.setAttribute('data-selected', 'true');
+          this.style.borderColor = '#CCFF45';
+          this.style.background = 'rgba(204,255,69,0.15)';
+          this.style.color = '#CCFF45';
+          this.textContent = val + ' ✓';
           selectedDests.push(val);
         }
       });

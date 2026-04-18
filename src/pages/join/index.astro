@@ -367,27 +367,52 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
     $('#next-btn').disabled = true;
 
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/squad_members`, {
-        method: 'POST',
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-          Prefer: 'return=minimal',
-        },
-        body: JSON.stringify({
-          trip_id: tripId,
-          nickname,
-          emoji: selectedEmoji,
-          role: 'member',
-          status: 'submitted',
-          vibes: selectedVibes,
-          budget_min: budgetMin,
-          budget_max: budgetMax,
-          destination_prefs: selectedDests,
-          responded_at: new Date().toISOString(),
-        }),
-      });
+      // Check if member with this nickname already exists for this trip
+      const checkRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/squad_members?trip_id=eq.${tripId}&nickname=eq.${encodeURIComponent(nickname)}&select=id`,
+        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+      );
+      const existing = await checkRes.json();
+
+      const memberData = {
+        trip_id: tripId,
+        nickname,
+        emoji: selectedEmoji,
+        role: 'member',
+        status: 'submitted',
+        vibes: selectedVibes,
+        budget_min: budgetMin,
+        budget_max: budgetMax,
+        destination_prefs: selectedDests,
+        responded_at: new Date().toISOString(),
+      };
+
+      let res;
+      if (existing && existing.length > 0) {
+        // Update existing member
+        res = await fetch(`${SUPABASE_URL}/rest/v1/squad_members?id=eq.${existing[0].id}`, {
+          method: 'PATCH',
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal',
+          },
+          body: JSON.stringify(memberData),
+        });
+      } else {
+        // Insert new member
+        res = await fetch(`${SUPABASE_URL}/rest/v1/squad_members`, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal',
+          },
+          body: JSON.stringify(memberData),
+        });
+      }
 
       if (!res.ok) {
         const err = await res.json();
@@ -505,28 +530,49 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
         castBtn.textContent = 'Submitting...';
         castBtn.disabled = true;
         try {
-          // First, submit as a squad member if not already
-          await fetch(`${SUPABASE_URL}/rest/v1/squad_members`, {
-            method: 'POST',
-            headers: {
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-              'Content-Type': 'application/json',
-              Prefer: 'return=minimal',
-            },
-            body: JSON.stringify({
-              trip_id: tripId,
-              nickname: voteNickname,
-              emoji: '😎',
-              role: 'member',
-              status: 'voted',
-              vibes: [],
-              budget_min: 0,
-              budget_max: 0,
-              destination_prefs: [],
-              responded_at: new Date().toISOString(),
-            }),
-          });
+          // Check if member already exists, update status to voted
+          const vCheckRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/squad_members?trip_id=eq.${tripId}&nickname=eq.${encodeURIComponent(voteNickname)}&select=id`,
+            { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+          );
+          const vExisting = await vCheckRes.json();
+
+          if (vExisting && vExisting.length > 0) {
+            // Update existing member status to voted
+            await fetch(`${SUPABASE_URL}/rest/v1/squad_members?id=eq.${vExisting[0].id}`, {
+              method: 'PATCH',
+              headers: {
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json',
+                Prefer: 'return=minimal',
+              },
+              body: JSON.stringify({ status: 'voted', responded_at: new Date().toISOString() }),
+            });
+          } else {
+            // New voter who did not fill preferences
+            await fetch(`${SUPABASE_URL}/rest/v1/squad_members`, {
+              method: 'POST',
+              headers: {
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json',
+                Prefer: 'return=minimal',
+              },
+              body: JSON.stringify({
+                trip_id: tripId,
+                nickname: voteNickname,
+                emoji: '😎',
+                role: 'member',
+                status: 'voted',
+                vibes: [],
+                budget_min: 0,
+                budget_max: 0,
+                destination_prefs: [],
+                responded_at: new Date().toISOString(),
+              }),
+            });
+          }
           // Update the vote count on the selected option
           const opt = tripOptions.find(o => o.id === selectedVoteOptionId);
           if (opt) {

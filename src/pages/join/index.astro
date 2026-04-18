@@ -194,28 +194,6 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
       tripData = trip;
       $('#trip-name').textContent = trip.name;
 
-      // Populate destination grid from host shortlist
-      const grid = $('#dest-grid');
-      grid.innerHTML = '';
-      (trip.destination_shortlist || []).forEach((dest) => {
-        const btn = document.createElement('button');
-        btn.className = 'join-dest-btn';
-        btn.type = 'button';
-        btn.textContent = dest;
-        btn.dataset.dest = dest;
-        btn.style.cursor = 'pointer';
-        btn.style.webkitTapHighlightColor = 'transparent';
-        btn.onclick = function() {
-          this.classList.toggle('selected');
-          if (this.classList.contains('selected')) {
-            selectedDests.push(dest);
-          } else {
-            selectedDests = selectedDests.filter(d => d !== dest);
-          }
-        };
-        grid.appendChild(btn);
-      });
-
       $('#loading').style.display = 'none';
       $('#form-container').style.display = 'block';
     } catch (e) {
@@ -229,6 +207,34 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
     $('#error-msg').textContent = msg;
   }
 
+  // ── Populate destinations (called when Step 4 becomes visible) ──
+  let destsPopulated = false;
+  function populateDestinations() {
+    if (destsPopulated) return;
+    destsPopulated = true;
+    const grid = $('#dest-grid');
+    grid.innerHTML = '';
+    (tripData.destination_shortlist || []).forEach((dest) => {
+      const btn = document.createElement('button');
+      btn.className = 'join-dest-btn';
+      btn.type = 'button';
+      btn.textContent = dest;
+      btn.setAttribute('data-dest', dest);
+      btn.style.cursor = 'pointer';
+      btn.style.touchAction = 'manipulation';
+      btn.addEventListener('pointerdown', function(e) {
+        e.preventDefault();
+        this.classList.toggle('selected');
+        if (this.classList.contains('selected')) {
+          selectedDests.push(dest);
+        } else {
+          selectedDests = selectedDests.filter(d => d !== dest);
+        }
+      });
+      grid.appendChild(btn);
+    });
+  }
+
   // ── Step navigation ────────────────────────────────────────
   function showStep(n) {
     step = n;
@@ -240,6 +246,9 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
     $('#next-btn').textContent = n === 5 ? 'Submit ✦' : 'Next →';
     $('#progress-bar').style.width = `${n * 20}%`;
     $('#step-label').textContent = `Step ${n} of 5`;
+
+    // Populate destinations when Step 4 becomes visible
+    if (n === 4 && tripData) populateDestinations();
 
     if (n === 5) buildSummary();
   }

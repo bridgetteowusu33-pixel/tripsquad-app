@@ -684,9 +684,13 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
 
   .join-dest-btn:hover { border-color: rgba(255, 255, 255, 0.2); }
   .join-dest-btn.selected {
-    border-color: var(--ts-lime);
-    background: rgba(204, 255, 69, 0.1);
-    color: var(--ts-lime);
+    border-color: var(--ts-lime) !important;
+    background: rgba(204, 255, 69, 0.15) !important;
+    color: var(--ts-lime) !important;
+    box-shadow: 0 0 0 1px var(--ts-lime);
+  }
+  .join-dest-btn.selected::after {
+    content: ' ✓';
   }
 
   .join-custom-dest {

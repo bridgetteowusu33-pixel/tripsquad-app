@@ -7,6 +7,22 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 <main class="landing">
   <div class="container">
 
+    <!-- Email confirmation success (shown when ?code= is in URL) -->
+    <div id="confirm-success" style="display:none; text-align:center; padding:140px 0 80px;">
+      <div style="font-size:64px; margin-bottom:16px;">✅</div>
+      <h1 style="font-family:var(--font-heading); font-size:32px; font-weight:800; margin-bottom:12px; color:var(--ts-lime);">Email confirmed!</h1>
+      <p style="font-size:18px; color:var(--ts-text2); max-width:400px; margin:0 auto 28px; line-height:1.6;">Your account is ready. Go back to the TripSquad app and sign in.</p>
+      <a href="com.afialabs.tripsquad://login-callback" style="display:inline-block; padding:14px 28px; background:var(--ts-lime); color:var(--ts-bg); font-family:var(--font-heading); font-size:15px; font-weight:700; border-radius:999px; text-decoration:none;">Open TripSquad →</a>
+    </div>
+
+    <script>
+      if (window.location.search.includes('code=')) {
+        document.getElementById('confirm-success').style.display = 'block';
+        document.getElementById('landing-content').style.display = 'none';
+      }
+    </script>
+
+    <div id="landing-content">
     <!-- Hero -->
     <section class="hero">
       <div class="hero-badge">
@@ -67,6 +83,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <footer class="footer">
       <p>Afia Labs · Built with AI. Stayed in control. Owned the outcome.</p>
     </footer>
+    </div>
 
   </div>
 </main>

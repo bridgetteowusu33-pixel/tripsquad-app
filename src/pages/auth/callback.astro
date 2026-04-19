@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Signing in — TripSquad">
+<main class="landing" style="min-height:100vh; display:flex; align-items:center; justify-content:center;">
+  <div style="text-align:center; padding:40px 24px;">
+    <div style="font-size:48px; margin-bottom:16px;">✈️</div>
+    <h1 style="font-family:var(--font-heading); font-size:24px; font-weight:800; margin-bottom:8px;">Signing you in...</h1>
+    <p id="status" style="color:var(--ts-text2); font-size:16px;">Redirecting to TripSquad</p>
+  </div>
+</main>
+</BaseLayout>
+
+<script>
+  // This page handles the OAuth callback from Supabase
+  // It receives the auth tokens in the URL hash and redirects to the app
+  const hash = window.location.hash;
+  const search = window.location.search;
+
+  // Try to redirect to the app with the auth data
+  if (hash) {
+    // Token-based callback (implicit flow)
+    window.location.replace('com.afialabs.tripsquad://login-callback' + hash);
+  } else if (search) {
+    // Code-based callback (PKCE flow)
+    window.location.replace('com.afialabs.tripsquad://login-callback' + search);
+  } else {
+    document.getElementById('status').textContent = 'Something went wrong. Open TripSquad manually.';
+  }
+
+  // Fallback: if the redirect doesn't work after 3 seconds, show a manual link
+  setTimeout(() => {
+    const el = document.getElementById('status');
+    if (el) {
+      el.innerHTML = '<a href="com.afialabs.tripsquad://login-callback" style="color:#CCFF45; text-decoration:underline;">Tap here to open TripSquad</a>';
+    }
+  }, 3000);
+</script>

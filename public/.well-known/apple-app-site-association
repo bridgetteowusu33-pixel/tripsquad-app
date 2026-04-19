@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "6TLGA683Z9.com.afialabs.tripsquadApp",
+        "paths": ["/auth/callback", "/auth/*"]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["6TLGA683Z9.com.afialabs.tripsquadApp"]
+  }
+}

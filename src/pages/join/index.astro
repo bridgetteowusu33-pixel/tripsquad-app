@@ -141,6 +141,12 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
         <div class="join-waiting-dot"></div>
         <span>waiting for the host to start voting...</span>
       </div>
+      <div class="join-app-nudge">
+        <p>📲 want the full experience?</p>
+        <a href="https://apps.apple.com/app/tripsquad" class="join-btn join-btn-ghost" style="margin-top:8px; font-size:13px; padding:10px 20px;">
+          get the TripSquad app →
+        </a>
+      </div>
     </div>
 
     <!-- Voting state -->
@@ -747,6 +753,21 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
   @keyframes waitPulse {
     0%, 100% { opacity: 0.3; transform: scale(0.8); }
     50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  .join-app-nudge {
+    margin-top: 28px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--ts-border);
+    border-radius: 16px;
+    text-align: center;
+  }
+
+  .join-app-nudge p {
+    color: var(--ts-text2);
+    font-size: 14px;
+    margin: 0;
   }
 
   .join-success-card {

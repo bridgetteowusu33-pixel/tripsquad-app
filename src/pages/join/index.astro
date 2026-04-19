@@ -134,10 +134,13 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
     <!-- Success state -->
     <div id="success" class="join-success" style="display:none;">
       <div class="join-logo" style="font-size:64px;">🎉</div>
-      <h1>You are in!</h1>
-      <p>Your preferences have been submitted. The host will generate trip options once everyone responds.</p>
+      <h1>you're in!</h1>
+      <p>your preferences are locked. stay on this page — when the host generates options, voting will appear right here.</p>
       <div class="join-success-card" id="success-card"></div>
-      <a href="/" class="join-btn join-btn-primary" style="margin-top:24px;">Get the TripSquad app</a>
+      <div class="join-waiting" id="waiting-indicator">
+        <div class="join-waiting-dot"></div>
+        <span>waiting for the host to start voting...</span>
+      </div>
     </div>
 
     <!-- Voting state -->
@@ -419,7 +422,7 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
         throw new Error(err.message || 'Submission failed');
       }
 
-      // Show success
+      // Show success and start polling for voting
       $('#form-container').style.display = 'none';
       $('#success').style.display = 'block';
       $('#success-card').innerHTML = `
@@ -427,6 +430,29 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
         <div class="join-summary-row"><span>You</span><strong>${nickname} ${selectedEmoji}</strong></div>
         <div class="join-summary-row"><span>Vibes</span><strong>${selectedVibes.join(', ')}</strong></div>
       `;
+
+      // Poll every 5 seconds to check if voting has started
+      voteNickname = nickname;
+      const pollInterval = setInterval(async () => {
+        try {
+          const pollRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/trips?invite_token=eq.${token}&select=status,trip_options(id,destination,country,flag,tagline,estimated_cost_pp,duration_days,vibe_match,compatibility_score,vote_count)`,
+            { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+          );
+          const pollData = await pollRes.json();
+          if (pollData && pollData.length > 0 && pollData[0].status === 'voting' && pollData[0].trip_options && pollData[0].trip_options.length > 0) {
+            clearInterval(pollInterval);
+            tripOptions = pollData[0].trip_options;
+            $('#success').style.display = 'none';
+            $('#vote-trip-name').textContent = tripData.name;
+            // Skip nickname step since we already have it
+            $('#vote-nickname-step').style.display = 'none';
+            renderVoteCards();
+            $('#vote-options').style.display = 'block';
+            $('#voting-container').style.display = 'block';
+          }
+        } catch (_) {}
+      }, 3000);
     } catch (e) {
       alert('Something went wrong: ' + e.message);
       $('#next-btn').textContent = 'Submit ✦';
@@ -694,6 +720,34 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
   }
 
   .join-success h1 { color: var(--ts-lime); }
+
+  .join-waiting {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 24px;
+    padding: 12px 20px;
+    background: rgba(204, 255, 69, 0.06);
+    border: 1px solid rgba(204, 255, 69, 0.15);
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ts-lime);
+  }
+
+  .join-waiting-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ts-lime);
+    animation: waitPulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes waitPulse {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
 
   .join-success-card {
     max-width: 360px;

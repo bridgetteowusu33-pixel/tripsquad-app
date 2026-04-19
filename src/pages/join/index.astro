@@ -662,21 +662,23 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
       card.className = 'vote-card';
       card.setAttribute('data-option-id', opt.id);
       card.innerHTML = `
-        <div class="vote-card-header">
-          <span class="vote-card-flag">${opt.flag || '🌍'}</span>
-          <div>
+        <div class="vote-card-top">
+          <div class="vote-card-flag-big">${opt.flag || '🌍'}</div>
+          <div class="vote-card-info">
             <div class="vote-card-dest">${opt.destination}, ${opt.country}</div>
             <div class="vote-card-tagline">${opt.tagline || ''}</div>
           </div>
+          <div class="vote-card-check"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         </div>
+        ${opt.description ? `<div class="vote-card-desc">${opt.description}</div>` : ''}
         <div class="vote-card-pills">
           <span class="vote-pill">~$${opt.estimated_cost_pp || '?'}</span>
           <span class="vote-pill">${opt.duration_days || '?'} days</span>
-          ${(opt.vibe_match || []).map(v => `<span class="vote-pill">${v}</span>`).join('')}
+          ${(opt.vibe_match || []).map(v => `<span class="vote-pill vote-pill-lime">${v}</span>`).join('')}
         </div>
         <div class="vote-card-compat">
-          <span>AI compatibility</span>
-          <span>${Math.round((opt.compatibility_score || 0) * 100)}%</span>
+          <span>squad compatibility</span>
+          <span class="vote-card-pct">${Math.round((opt.compatibility_score || 0) * 100)}%</span>
         </div>
         <div class="vote-card-bar">
           <div class="vote-card-bar-fill" style="width:${(opt.compatibility_score || 0) * 100}%"></div>
@@ -688,12 +690,28 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
         // Deselect all
         const allCards = container.querySelectorAll('.vote-card');
         allCards.forEach(function(c) {
-          c.style.borderColor = 'rgba(255,255,255,0.12)';
+          c.style.borderColor = 'rgba(255,255,255,0.08)';
           c.style.background = '#171728';
+          c.style.boxShadow = 'none';
+          c.style.transform = 'scale(1)';
+          const chk = c.querySelector('.vote-card-check');
+          if (chk) { chk.style.background = 'transparent'; chk.style.borderColor = 'rgba(255,255,255,0.12)'; chk.style.color = 'transparent'; }
+          const pct = c.querySelector('.vote-card-pct');
+          if (pct) pct.style.color = '#9B6DFF';
+          const bar = c.querySelector('.vote-card-bar-fill');
+          if (bar) bar.style.background = '#9B6DFF';
         });
         // Select this one
         this.style.borderColor = '#CCFF45';
-        this.style.background = 'rgba(204,255,69,0.08)';
+        this.style.background = 'rgba(204,255,69,0.06)';
+        this.style.boxShadow = '0 4px 20px rgba(204,255,69,0.15)';
+        this.style.transform = 'scale(1.02)';
+        const chk = this.querySelector('.vote-card-check');
+        if (chk) { chk.style.background = '#CCFF45'; chk.style.borderColor = '#CCFF45'; chk.style.color = '#08080E'; chk.style.boxShadow = '0 0 8px rgba(204,255,69,0.4)'; }
+        const pct = this.querySelector('.vote-card-pct');
+        if (pct) pct.style.color = '#CCFF45';
+        const bar = this.querySelector('.vote-card-bar-fill');
+        if (bar) bar.style.background = '#CCFF45';
         selectedVoteOptionId = opt.id;
       };
       container.appendChild(card);
@@ -1299,22 +1317,32 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
   .vote-card {
     padding: 20px;
     background: var(--ts-s2);
-    border: 1.5px solid var(--ts-border2);
-    border-radius: 16px;
-    margin-bottom: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    margin-bottom: 14px;
     cursor: pointer;
-    transition: border-color 0.2s;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .vote-card-header {
+  .vote-card:active {
+    transform: scale(0.98) !important;
+  }
+
+  .vote-card-top {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     margin-bottom: 12px;
   }
 
-  .vote-card-flag {
-    font-size: 32px;
+  .vote-card-flag-big {
+    font-size: 40px;
+    flex-shrink: 0;
+  }
+
+  .vote-card-info {
+    flex: 1;
+    min-width: 0;
   }
 
   .vote-card-dest {
@@ -1322,28 +1350,65 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
     font-size: 18px;
     font-weight: 800;
     color: var(--ts-text);
+    line-height: 1.2;
   }
 
   .vote-card-tagline {
     font-size: 13px;
     color: var(--ts-text2);
-    margin-top: 2px;
+    margin-top: 3px;
+  }
+
+  .vote-card-check {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    background: transparent;
+    color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .vote-card-check svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .vote-card-desc {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ts-text2);
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .vote-card-pills {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
 
   .vote-pill {
-    padding: 4px 10px;
+    padding: 5px 12px;
     background: var(--ts-s3);
     border-radius: 999px;
     font-size: 12px;
     font-weight: 600;
     color: var(--ts-text2);
+  }
+
+  .vote-pill-lime {
+    background: rgba(204, 255, 69, 0.1);
+    color: var(--ts-lime);
+    border: 1px solid rgba(204, 255, 69, 0.2);
   }
 
   .vote-card-compat {
@@ -1352,6 +1417,12 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
     font-size: 12px;
     color: var(--ts-muted);
     margin-bottom: 6px;
+  }
+
+  .vote-card-pct {
+    font-weight: 700;
+    color: #9B6DFF;
+    transition: color 0.25s;
   }
 
   .vote-card-bar {
@@ -1363,8 +1434,9 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
 
   .vote-card-bar-fill {
     height: 100%;
-    background: var(--ts-lime);
+    background: #9B6DFF;
     border-radius: 2px;
+    transition: background 0.25s;
   }
 
   @media (max-width: 480px) {

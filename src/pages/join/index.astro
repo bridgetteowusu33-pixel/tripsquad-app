@@ -132,29 +132,49 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
     </div>
 
     <!-- Success state -->
-    <div id="success" class="join-success" style="display:none;">
-      <div class="join-logo" style="font-size:64px;">🎉</div>
-      <h1>you're in!</h1>
-      <p>your preferences are locked. stay on this page — when the host generates options, voting will appear right here.</p>
-      <div class="join-success-card" id="success-card"></div>
-      <div class="join-waiting" id="waiting-indicator">
-        <div class="join-waiting-dot"></div>
-        <span>waiting for the host to start voting...</span>
-      </div>
-      <div class="join-app-nudge">
-        <p>📲 want the full experience?</p>
-        <a href="https://apps.apple.com/app/tripsquad" class="join-btn join-btn-ghost" style="margin-top:8px; font-size:13px; padding:10px 20px;">
-          get the TripSquad app →
-        </a>
+    <div id="success" style="display:none;">
+      <div class="locked-in">
+        <!-- Animated check -->
+        <div class="locked-check">
+          <svg viewBox="0 0 52 52" class="locked-check-svg">
+            <circle cx="26" cy="26" r="25" fill="none" stroke="#CCFF45" stroke-width="2" class="locked-circle"/>
+            <path fill="none" stroke="#CCFF45" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M14 27l7 7 16-16" class="locked-path"/>
+          </svg>
+        </div>
+
+        <h1 class="locked-title">you're locked in 🔒</h1>
+        <p class="locked-sub">your vibes are saved. stay here — voting drops when the host is ready.</p>
+
+        <!-- Your preferences as pills -->
+        <div class="locked-prefs" id="locked-prefs"></div>
+
+        <!-- Live status -->
+        <div class="locked-status">
+          <div class="locked-status-inner">
+            <div class="locked-pulse"></div>
+            <span>waiting for the squad...</span>
+          </div>
+          <p class="locked-hint">this page auto-updates. no need to refresh.</p>
+        </div>
+
+        <!-- App nudge -->
+        <div class="locked-app">
+          <span>📲</span>
+          <div>
+            <p class="locked-app-title">want the full experience?</p>
+            <p class="locked-app-sub">real-time updates, itineraries, and more</p>
+          </div>
+          <a href="https://apps.apple.com/app/tripsquad" class="locked-app-btn">get app</a>
+        </div>
       </div>
     </div>
 
     <!-- Voting state -->
     <div id="voting-container" style="display:none;">
-      <div class="join-header">
-        <div class="join-logo">🗳️</div>
-        <h1 id="vote-trip-name" class="join-title">Vote Now</h1>
-        <p class="join-sub">The squad's preferences are in. Pick your favourite destination.</p>
+      <div class="vote-header">
+        <div style="font-size:48px; text-align:center; margin-bottom:12px;">🗳️</div>
+        <h1 id="vote-trip-name" class="vote-title">it's decision time</h1>
+        <p class="vote-sub">the squad's vibes are in. pick your fave destination.</p>
       </div>
 
       <div id="vote-nickname-step">
@@ -431,11 +451,15 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
       // Show success and start polling for voting
       $('#form-container').style.display = 'none';
       $('#success').style.display = 'block';
-      $('#success-card').innerHTML = `
-        <div class="join-summary-row"><span>Trip</span><strong>${tripData.name}</strong></div>
-        <div class="join-summary-row"><span>You</span><strong>${nickname} ${selectedEmoji}</strong></div>
-        <div class="join-summary-row"><span>Vibes</span><strong>${selectedVibes.join(', ')}</strong></div>
-      `;
+      // Show preferences as visual pills
+      const prefsEl = $('#locked-prefs');
+      if (prefsEl) {
+        let pillsHtml = `<span class="locked-pill">${selectedEmoji} ${nickname}</span>`;
+        selectedVibes.forEach(v => { pillsHtml += `<span class="locked-pill locked-pill-lime">${v}</span>`; });
+        if ($('#budget-min').value) pillsHtml += `<span class="locked-pill">$${$('#budget-min').value}–$${$('#budget-max').value}</span>`;
+        selectedDests.forEach(d => { pillsHtml += `<span class="locked-pill locked-pill-outline">${d}</span>`; });
+        prefsEl.innerHTML = pillsHtml;
+      }
 
       // Poll every 5 seconds to check if voting has started
       voteNickname = nickname;
@@ -755,19 +779,177 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
     50% { opacity: 1; transform: scale(1.2); }
   }
 
-  .join-app-nudge {
-    margin-top: 28px;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--ts-border);
-    border-radius: 16px;
+  /* ── Locked In Screen ── */
+  .locked-in {
+    text-align: center;
+    padding: 60px 0 40px;
+  }
+
+  .locked-check {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 20px;
+  }
+
+  .locked-check-svg {
+    width: 64px;
+    height: 64px;
+  }
+
+  .locked-circle {
+    stroke-dasharray: 157;
+    stroke-dashoffset: 157;
+    animation: drawCircle 0.6s ease-out 0.2s forwards;
+  }
+
+  .locked-path {
+    stroke-dasharray: 50;
+    stroke-dashoffset: 50;
+    animation: drawCheck 0.4s ease-out 0.7s forwards;
+  }
+
+  @keyframes drawCircle {
+    to { stroke-dashoffset: 0; }
+  }
+
+  @keyframes drawCheck {
+    to { stroke-dashoffset: 0; }
+  }
+
+  .locked-title {
+    font-family: var(--font-heading);
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--ts-lime);
+    margin: 0 0 8px;
+  }
+
+  .locked-sub {
+    color: var(--ts-text2);
+    font-size: 15px;
+    line-height: 1.5;
+    max-width: 320px;
+    margin: 0 auto 24px;
+  }
+
+  .locked-prefs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+
+  .locked-pill {
+    padding: 6px 14px;
+    background: var(--ts-s2);
+    border: 1px solid var(--ts-border2);
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ts-text2);
+  }
+
+  .locked-pill-lime {
+    border-color: rgba(204, 255, 69, 0.25);
+    color: var(--ts-lime);
+    background: rgba(204, 255, 69, 0.08);
+  }
+
+  .locked-pill-outline {
+    border-color: var(--ts-border2);
+    color: var(--ts-muted);
+    background: transparent;
+  }
+
+  .locked-status {
+    margin-bottom: 24px;
+  }
+
+  .locked-status-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    background: rgba(204, 255, 69, 0.06);
+    border: 1px solid rgba(204, 255, 69, 0.15);
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ts-lime);
+  }
+
+  .locked-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ts-lime);
+    animation: waitPulse 1.5s ease-in-out infinite;
+  }
+
+  .locked-hint {
+    color: var(--ts-muted);
+    font-size: 12px;
+    margin: 8px 0 0;
+  }
+
+  .locked-app {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 360px;
+    margin: 0 auto;
+    padding: 16px 20px;
+    background: var(--ts-s1);
+    border: 1px solid var(--ts-border2);
+    border-radius: 14px;
+    text-align: left;
+  }
+
+  .locked-app span { font-size: 24px; }
+
+  .locked-app-title {
+    font-family: var(--font-heading);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ts-text);
+    margin: 0;
+  }
+
+  .locked-app-sub {
+    font-size: 12px;
+    color: var(--ts-muted);
+    margin: 2px 0 0;
+  }
+
+  .locked-app-btn {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    background: var(--ts-lime);
+    color: var(--ts-bg);
+    font-family: var(--font-heading);
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 999px;
+    text-decoration: none;
+    margin-left: auto;
+  }
+
+  /* ── Vote Header ── */
+  .vote-title {
+    font-family: var(--font-heading);
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--ts-text);
+    margin: 0 0 8px;
     text-align: center;
   }
 
-  .join-app-nudge p {
+  .vote-sub {
     color: var(--ts-text2);
-    font-size: 14px;
-    margin: 0;
+    font-size: 15px;
+    text-align: center;
+    margin: 0 0 24px;
   }
 
   .join-success-card {

@@ -1,0 +1,74 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="TripSquad — Privacy Policy" description="How TripSquad handles your data.">
+
+<main class="legal">
+  <div class="container">
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: April 2026</p>
+
+    <p>TripSquad ("we", "us") is a product of Afia Labs. This policy explains what we collect, why, and your rights.</p>
+
+    <h2>What we collect</h2>
+    <ul>
+      <li><strong>Account data:</strong> email, display name, emoji, optional @tag handle, profile photo URL.</li>
+      <li><strong>Trip data:</strong> trip names, destinations, dates, budgets, preferences, votes, chat messages, itineraries you create or participate in.</li>
+      <li><strong>Device data:</strong> push notification tokens (only if you grant permission), platform, app version.</li>
+      <li><strong>Diagnostics:</strong> minimal crash and performance data to keep the app working.</li>
+    </ul>
+    <p>We do <strong>not</strong> collect your location unless you explicitly share it in a trip. We do not sell your data.</p>
+
+    <h2>How we use it</h2>
+    <ul>
+      <li>To provide the service — sync your trips, deliver realtime updates to your squad, generate AI trip options.</li>
+      <li>To send you notifications about trip activity you're part of.</li>
+      <li>To improve Scout (our AI) using aggregate, de-identified prompts. We do <strong>not</strong> train models on the content of your private squad chats or DMs.</li>
+    </ul>
+
+    <h2>Who we share with</h2>
+    <ul>
+      <li><strong>Supabase</strong> (backend hosting and realtime).</li>
+      <li><strong>Anthropic</strong> (Claude API — Scout's responses). Prompts are sent to generate AI output and not retained for training per Anthropic's policies.</li>
+      <li><strong>Firebase Cloud Messaging / Apple APNs</strong> for push delivery.</li>
+      <li><strong>Squad members you invite.</strong> Trip-specific data (preferences, votes, chat) is visible to squad members you add.</li>
+    </ul>
+    <p>We don't share your data with advertisers.</p>
+
+    <h2>Your rights</h2>
+    <ul>
+      <li><strong>Access / export:</strong> email us and we'll send you a copy of your data.</li>
+      <li><strong>Delete:</strong> delete your account in the app (Profile → settings) or email us. Deletion removes your profile, trips you host, and your chat messages within 30 days.</li>
+      <li><strong>Correct:</strong> update your profile fields any time in the app.</li>
+      <li><strong>Opt out of notifications:</strong> system settings or in-app toggle.</li>
+    </ul>
+
+    <h2>Children</h2>
+    <p>TripSquad is not intended for users under 13. We do not knowingly collect data from children under 13.</p>
+
+    <h2>Security</h2>
+    <p>Data is transmitted over HTTPS. Supabase Row Level Security restricts access to your trips to you and your squad. Passwords are hashed. Push tokens are stored per-user and revoked on sign out.</p>
+
+    <h2>International users</h2>
+    <p>We process data in the United States. If you're in the EU/UK, we rely on standard contractual clauses.</p>
+
+    <h2>Contact</h2>
+    <p>Questions? Email <a href="mailto:hi@afialabs.net">hi@afialabs.net</a>.</p>
+  </div>
+</main>
+
+<style>
+  .legal { padding: 80px 24px 120px; min-height: 100vh; }
+  .container { max-width: 720px; margin: 0 auto; }
+  h1 { font-family: var(--font-heading); font-size: 40px; font-weight: 800; margin-bottom: 8px; color: var(--ts-text); }
+  .updated { color: var(--ts-muted); margin-bottom: 32px; font-size: 14px; }
+  h2 { font-family: var(--font-heading); font-size: 22px; font-weight: 700; margin-top: 32px; margin-bottom: 10px; color: var(--ts-lime); }
+  p, li { color: var(--ts-text2); line-height: 1.7; font-size: 16px; }
+  ul { padding-left: 20px; margin-bottom: 14px; }
+  li { margin-bottom: 6px; }
+  a { color: var(--ts-lime); }
+  strong { color: var(--ts-text); }
+</style>
+
+</BaseLayout>

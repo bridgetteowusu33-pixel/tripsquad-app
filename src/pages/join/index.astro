@@ -629,23 +629,16 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
               }),
             });
           }
-          // Atomically increment vote count — read current then +1
+          // Atomically increment vote count via RPC
           if (selectedVoteOptionId) {
-            const curRes = await fetch(
-              `${SUPABASE_URL}/rest/v1/trip_options?id=eq.${selectedVoteOptionId}&select=vote_count`,
-              { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-            );
-            const curData = await curRes.json();
-            const currentCount = (curData && curData[0]) ? (curData[0].vote_count || 0) : 0;
-            await fetch(`${SUPABASE_URL}/rest/v1/trip_options?id=eq.${selectedVoteOptionId}`, {
-              method: 'PATCH',
+            await fetch(`${SUPABASE_URL}/rest/v1/rpc/increment_option_vote`, {
+              method: 'POST',
               headers: {
                 apikey: SUPABASE_ANON_KEY,
                 Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
                 'Content-Type': 'application/json',
-                Prefer: 'return=minimal',
               },
-              body: JSON.stringify({ vote_count: currentCount + 1 }),
+              body: JSON.stringify({ option_id: selectedVoteOptionId }),
             });
           }
           $('#voting-container').style.display = 'none';

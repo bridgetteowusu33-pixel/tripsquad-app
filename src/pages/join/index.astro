@@ -666,7 +666,7 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
             <div class="vote-card-dest">${opt.destination}, ${opt.country}</div>
             <div class="vote-card-tagline">${opt.tagline || ''}</div>
           </div>
-          <div class="vote-card-check"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="vote-card-check">✓</div>
         </div>
         ${opt.description ? `<div class="vote-card-desc">${opt.description}</div>` : ''}
         <div class="vote-card-pills">
@@ -693,7 +693,7 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
           c.style.boxShadow = 'none';
           c.style.transform = 'scale(1)';
           const chk = c.querySelector('.vote-card-check');
-          if (chk) { chk.style.background = 'transparent'; chk.style.borderColor = 'rgba(255,255,255,0.12)'; chk.style.color = 'transparent'; }
+          if (chk) { chk.style.background = 'transparent'; chk.style.borderColor = 'rgba(255,255,255,0.12)'; chk.style.color = 'transparent'; chk.style.boxShadow = 'none'; }
           const pct = c.querySelector('.vote-card-pct');
           if (pct) pct.style.color = '#9B6DFF';
           const bar = c.querySelector('.vote-card-bar-fill');
@@ -705,7 +705,7 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
         this.style.boxShadow = '0 4px 20px rgba(204,255,69,0.15)';
         this.style.transform = 'scale(1.02)';
         const chk = this.querySelector('.vote-card-check');
-        if (chk) { chk.style.background = '#CCFF45'; chk.style.borderColor = '#CCFF45'; chk.style.color = '#08080E'; chk.style.boxShadow = '0 0 8px rgba(204,255,69,0.4)'; }
+        if (chk) { chk.style.background = '#CCFF45'; chk.style.borderColor = '#CCFF45'; chk.style.color = '#08080E'; chk.style.boxShadow = '0 0 8px rgba(204,255,69,0.3)'; chk.style.fontSize = '14px'; }
         const pct = this.querySelector('.vote-card-pct');
         if (pct) pct.style.color = '#CCFF45';
         const bar = this.querySelector('.vote-card-bar-fill');
@@ -1361,9 +1361,7 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
     width: 28px;
     height: 28px;
     min-width: 28px;
-    min-height: 28px;
     max-width: 28px;
-    max-height: 28px;
     flex-shrink: 0;
     border-radius: 50%;
     border: 2px solid rgba(255, 255, 255, 0.12);
@@ -1372,14 +1370,10 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .vote-card-check svg {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
   }
 
   .vote-card-desc {

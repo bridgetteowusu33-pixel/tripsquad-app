@@ -1362,6 +1362,10 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
   .vote-card-check {
     width: 28px;
     height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    max-width: 28px;
+    max-height: 28px;
     flex-shrink: 0;
     border-radius: 50%;
     border: 2px solid rgba(255, 255, 255, 0.12);
@@ -1370,12 +1374,14 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .vote-card-check svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
   }
 
   .vote-card-desc {

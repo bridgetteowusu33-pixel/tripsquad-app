@@ -688,24 +688,22 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
         // Deselect all
         const allCards = container.querySelectorAll('.vote-card');
         allCards.forEach(function(c) {
-          c.style.borderColor = 'rgba(255,255,255,0.08)';
-          c.style.background = '#171728';
-          c.style.boxShadow = 'none';
-          c.style.transform = 'scale(1)';
+          c.style.cssText = 'cursor:pointer; touch-action:manipulation; padding:20px; background:#171728; border:2px solid rgba(255,255,255,0.08); border-radius:18px; margin-bottom:14px; transition:all 0.25s;';
           const chk = c.querySelector('.vote-card-check');
-          if (chk) { chk.style.background = 'transparent'; chk.style.borderColor = 'rgba(255,255,255,0.12)'; chk.style.color = 'transparent'; chk.style.boxShadow = 'none'; }
+          if (chk) chk.style.cssText = 'width:28px;height:28px;min-width:28px;max-width:28px;flex-shrink:0;border-radius:50%;border:2px solid rgba(255,255,255,0.12);background:transparent;color:transparent;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;line-height:1;';
+          const dest = c.querySelector('.vote-card-dest');
+          if (dest) dest.style.color = '#F0EDF8';
           const pct = c.querySelector('.vote-card-pct');
           if (pct) pct.style.color = '#9B6DFF';
           const bar = c.querySelector('.vote-card-bar-fill');
           if (bar) bar.style.background = '#9B6DFF';
         });
-        // Select this one
-        this.style.borderColor = '#CCFF45';
-        this.style.background = 'rgba(204,255,69,0.06)';
-        this.style.boxShadow = '0 4px 20px rgba(204,255,69,0.15)';
-        this.style.transform = 'scale(1.02)';
+        // Select this one — full card highlight
+        this.style.cssText = 'cursor:pointer; touch-action:manipulation; padding:20px; background:rgba(204,255,69,0.08); border:2px solid #CCFF45; border-radius:18px; margin-bottom:14px; box-shadow:0 4px 24px rgba(204,255,69,0.2); transform:scale(1.01); transition:all 0.25s;';
         const chk = this.querySelector('.vote-card-check');
-        if (chk) { chk.style.background = '#CCFF45'; chk.style.borderColor = '#CCFF45'; chk.style.color = '#08080E'; chk.style.boxShadow = '0 0 8px rgba(204,255,69,0.3)'; chk.style.fontSize = '14px'; }
+        if (chk) chk.style.cssText = 'width:28px;height:28px;min-width:28px;max-width:28px;flex-shrink:0;border-radius:50%;border:2px solid #CCFF45;background:#CCFF45;color:#08080E;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;line-height:1;box-shadow:0 0 8px rgba(204,255,69,0.3);';
+        const dest = this.querySelector('.vote-card-dest');
+        if (dest) dest.style.color = '#CCFF45';
         const pct = this.querySelector('.vote-card-pct');
         if (pct) pct.style.color = '#CCFF45';
         const bar = this.querySelector('.vote-card-bar-fill');

@@ -629,10 +629,15 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
               }),
             });
           }
-          // Update the vote count on the selected option
-          const opt = tripOptions.find(o => o.id === selectedVoteOptionId);
-          if (opt) {
-            await fetch(`${SUPABASE_URL}/rest/v1/trip_options?id=eq.${opt.id}`, {
+          // Atomically increment vote count — read current then +1
+          if (selectedVoteOptionId) {
+            const curRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/trip_options?id=eq.${selectedVoteOptionId}&select=vote_count`,
+              { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+            );
+            const curData = await curRes.json();
+            const currentCount = (curData && curData[0]) ? (curData[0].vote_count || 0) : 0;
+            await fetch(`${SUPABASE_URL}/rest/v1/trip_options?id=eq.${selectedVoteOptionId}`, {
               method: 'PATCH',
               headers: {
                 apikey: SUPABASE_ANON_KEY,
@@ -640,7 +645,7 @@ const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','�
                 'Content-Type': 'application/json',
                 Prefer: 'return=minimal',
               },
-              body: JSON.stringify({ vote_count: (opt.vote_count || 0) + 1 }),
+              body: JSON.stringify({ vote_count: currentCount + 1 }),
             });
           }
           $('#voting-container').style.display = 'none';

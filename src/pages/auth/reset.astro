@@ -37,8 +37,8 @@ const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'sb_publis
 
     <div id="error-state" style="display:none;">
       <div class="check" style="color:var(--ts-coral);">⚠️</div>
-      <h1>link expired or invalid.</h1>
-      <p class="sub">reset links expire in 1 hour. open tripsquad and tap "forgot password?" again.</p>
+      <h1 id="error-title">link expired or invalid.</h1>
+      <p id="error-sub" class="sub">reset links expire in 1 hour. open tripsquad and tap "forgot password?" again.</p>
     </div>
 
     <p class="footer">afia labs · built with ai · stayed in control</p>
@@ -48,24 +48,48 @@ const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'sb_publis
 
 <script define:vars={{ SUPABASE_URL, SUPABASE_ANON_KEY }}>
 (() => {
-  // Supabase returns the recovery token in the URL hash:
+  // Supabase returns the recovery token in the URL hash on success:
   //   https://gettripsquad.com/auth/reset#access_token=...&type=recovery
+  // Or in query params / hash when Supabase itself errored:
+  //   ...?error=access_denied&error_code=otp_expired&error_description=...
   const hashParams = new URLSearchParams(window.location.hash.slice(1));
+  const queryParams = new URLSearchParams(window.location.search);
   const accessToken = hashParams.get('access_token');
   const type = hashParams.get('type');
+  const errorCode = hashParams.get('error_code') || queryParams.get('error_code');
+  const errorDesc = hashParams.get('error_description') || queryParams.get('error_description');
 
   const formState = document.getElementById('form-state');
   const successState = document.getElementById('success-state');
   const errorState = document.getElementById('error-state');
+  const errorTitle = document.getElementById('error-title');
+  const errorSub = document.getElementById('error-sub');
   const openAppBtn = document.getElementById('open-app');
 
   // Build the deep link used on success.
   const deepLink = 'com.afialabs.tripsquad://login-callback' + window.location.hash;
   if (openAppBtn) openAppBtn.href = deepLink;
 
-  if (!accessToken || type !== 'recovery') {
+  const showError = (title, sub) => {
+    if (errorTitle) errorTitle.textContent = title;
+    if (errorSub) errorSub.textContent = sub;
     formState.style.display = 'none';
     errorState.style.display = 'block';
+  };
+
+  if (errorCode === 'otp_expired') {
+    showError('this link expired.',
+      "reset links last 1 hour. open tripsquad and tap \"forgot password?\" to get a fresh one.");
+    return;
+  }
+  if (errorCode) {
+    showError('link invalid.',
+      errorDesc ? errorDesc.replace(/\+/g, ' ') : 'open tripsquad and tap "forgot password?" again.');
+    return;
+  }
+  if (!accessToken || type !== 'recovery') {
+    showError('link expired or invalid.',
+      'reset links expire in 1 hour. open tripsquad and tap "forgot password?" again.');
     return;
   }
 

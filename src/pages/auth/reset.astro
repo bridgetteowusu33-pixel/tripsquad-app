@@ -1,0 +1,222 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL || 'https://zgtlwyjcxmmhicsccjhd.supabase.co';
+const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_fqyImmzqflidAOjs-S4IrQ_Q0yg1Prr';
+---
+
+<BaseLayout title="Reset password — TripSquad" noindex>
+<main class="reset-wrap">
+  <div class="reset-card">
+    <div class="brand">tripsquad <span class="plane">✈️</span></div>
+
+    <div id="form-state">
+      <h1>set a new password.</h1>
+      <p class="sub">pick a password you'll actually remember this time.</p>
+
+      <form id="reset-form" autocomplete="off">
+        <label class="field">
+          <span class="label-text">new password</span>
+          <input type="password" id="pw" minlength="6" required autocomplete="new-password" />
+        </label>
+        <label class="field">
+          <span class="label-text">confirm password</span>
+          <input type="password" id="pw2" minlength="6" required autocomplete="new-password" />
+        </label>
+        <p id="err" class="err"></p>
+        <button type="submit" id="submit-btn">save new password →</button>
+      </form>
+    </div>
+
+    <div id="success-state" style="display:none;">
+      <div class="check">✅</div>
+      <h1>password updated.</h1>
+      <p class="sub">you're good. open tripsquad and sign in.</p>
+      <a id="open-app" href="#" class="open-btn">open tripsquad →</a>
+    </div>
+
+    <div id="error-state" style="display:none;">
+      <div class="check" style="color:var(--ts-coral);">⚠️</div>
+      <h1>link expired or invalid.</h1>
+      <p class="sub">reset links expire in 1 hour. open tripsquad and tap "forgot password?" again.</p>
+    </div>
+
+    <p class="footer">afia labs · built with ai · stayed in control</p>
+  </div>
+</main>
+</BaseLayout>
+
+<script define:vars={{ SUPABASE_URL, SUPABASE_ANON_KEY }}>
+(() => {
+  // Supabase returns the recovery token in the URL hash:
+  //   https://gettripsquad.com/auth/reset#access_token=...&type=recovery
+  const hashParams = new URLSearchParams(window.location.hash.slice(1));
+  const accessToken = hashParams.get('access_token');
+  const type = hashParams.get('type');
+
+  const formState = document.getElementById('form-state');
+  const successState = document.getElementById('success-state');
+  const errorState = document.getElementById('error-state');
+  const openAppBtn = document.getElementById('open-app');
+
+  // Build the deep link used on success.
+  const deepLink = 'com.afialabs.tripsquad://login-callback' + window.location.hash;
+  if (openAppBtn) openAppBtn.href = deepLink;
+
+  if (!accessToken || type !== 'recovery') {
+    formState.style.display = 'none';
+    errorState.style.display = 'block';
+    return;
+  }
+
+  const form = document.getElementById('reset-form');
+  const err = document.getElementById('err');
+  const btn = document.getElementById('submit-btn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.textContent = '';
+
+    const pw = document.getElementById('pw').value;
+    const pw2 = document.getElementById('pw2').value;
+
+    if (pw.length < 6) { err.textContent = 'password must be at least 6 characters'; return; }
+    if (pw !== pw2) { err.textContent = "passwords don't match"; return; }
+
+    btn.disabled = true;
+    btn.textContent = 'saving…';
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        method: 'PUT',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password: pw }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.msg || body.error_description || `failed (${res.status})`);
+      }
+
+      formState.style.display = 'none';
+      successState.style.display = 'block';
+
+      // Try auto-redirect into the app.
+      setTimeout(() => {
+        try { window.location.href = deepLink; } catch (_) {}
+      }, 400);
+    } catch (ex) {
+      btn.disabled = false;
+      btn.textContent = 'save new password →';
+      err.textContent = ex.message || "couldn't save — try again";
+    }
+  });
+})();
+</script>
+
+<style>
+  .reset-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    background: var(--ts-bg);
+    color: var(--ts-text);
+    font-family: var(--font-body);
+  }
+  .reset-card {
+    width: 100%;
+    max-width: 440px;
+    background: var(--ts-s1);
+    border: 1px solid var(--ts-border);
+    border-radius: 20px;
+    padding: 36px 28px;
+    text-align: center;
+  }
+  .brand {
+    font-family: var(--font-heading);
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 22px;
+  }
+  .plane { color: var(--ts-lime); }
+  h1 {
+    font-family: var(--font-heading);
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  .sub {
+    color: var(--ts-text2);
+    font-size: 15px;
+    line-height: 1.5;
+    margin-bottom: 22px;
+  }
+  .field {
+    display: block;
+    text-align: left;
+    margin-bottom: 14px;
+  }
+  .label-text {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ts-muted);
+    margin-bottom: 6px;
+  }
+  input[type="password"] {
+    width: 100%;
+    padding: 13px 14px;
+    background: var(--ts-s2);
+    color: var(--ts-text);
+    border: 1px solid var(--ts-border);
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: var(--font-body);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type="password"]:focus {
+    border-color: var(--ts-lime);
+  }
+  .err {
+    color: var(--ts-coral);
+    font-size: 13px;
+    margin-bottom: 10px;
+    min-height: 18px;
+  }
+  #submit-btn, .open-btn {
+    display: inline-block;
+    width: 100%;
+    padding: 14px 20px;
+    background: var(--ts-lime);
+    color: var(--ts-bg);
+    font-family: var(--font-heading);
+    font-size: 15px;
+    font-weight: 700;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.1s;
+  }
+  #submit-btn:hover, .open-btn:hover { transform: scale(1.01); }
+  #submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .check { font-size: 48px; margin-bottom: 12px; }
+  .footer {
+    color: var(--ts-muted);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 24px;
+  }
+</style>
+

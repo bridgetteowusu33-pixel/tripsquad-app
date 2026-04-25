@@ -62,6 +62,11 @@ class TripWrapOverlay extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
           child: LayoutBuilder(builder: (context, constraints) {
+            // iPad / wide screens get larger stamp + card so the wrap
+            // moment has presence on a 1024pt+ display without
+            // ballooning to a billboard.
+            final isWide = constraints.maxWidth >= 700;
+
             // Fixed chrome we must fit around the hero pieces:
             //   header block (label + tagline)   ≈ 42
             //   4× internal gaps                 ≈ 58
@@ -74,12 +79,16 @@ class TripWrapOverlay extends ConsumerWidget {
             // The card is the hero — gets the larger share. Clamps
             // keep both inside a tasteful range on iPhone SE at the
             // low end and iPad at the high end.
-            final stampSize = (flex * 0.28).clamp(110.0, 180.0);
-            final cardHeight = (flex * 0.72).clamp(320.0, 520.0);
+            final stampMax = isWide ? 240.0 : 180.0;
+            final cardMax = isWide ? 660.0 : 520.0;
+            final stampSize = (flex * 0.28).clamp(110.0, stampMax);
+            final cardHeight = (flex * 0.72).clamp(320.0, cardMax);
             // Card is stories-ratio (9:16), so width derives from
-            // height. Also cap width to the available horizontal so
-            // narrow phones don't overflow.
-            final maxCardWidth = constraints.maxWidth;
+            // height. Cap width to a phone-like silhouette on iPad
+            // (~370pt) and the available horizontal on phones so we
+            // don't overflow on narrow devices.
+            final maxCardWidth =
+                isWide ? 380.0 : constraints.maxWidth;
             final cardWidth =
                 (cardHeight * 9 / 16).clamp(180.0, maxCardWidth);
 

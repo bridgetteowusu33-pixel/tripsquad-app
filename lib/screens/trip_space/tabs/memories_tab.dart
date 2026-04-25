@@ -72,23 +72,28 @@ class _MemoriesTabState extends ConsumerState<MemoriesTab> {
         ),
         const SizedBox(height: 20),
 
-        // The card — exported to PNG via RepaintBoundary.
-        Center(
-          child: RepaintBoundary(
-            key: _cardKey,
-            child: TripRecapCard(
-              destination: dest,
-              flag: flag,
-              tripName: trip.name,
-              dates: dates,
-              days: days,
-              squadEmojis: squadEmojis,
-              accent: accent,
-              archetype: _archetypeFor(trip),
-              width: 300,
+        // The card — exported to PNG via RepaintBoundary. On iPad
+        // (wide), bump the on-screen width so the recap has presence;
+        // share-as-image gets a higher-res export too.
+        Builder(builder: (ctx) {
+          final isWide = MediaQuery.of(ctx).size.width >= 700;
+          return Center(
+            child: RepaintBoundary(
+              key: _cardKey,
+              child: TripRecapCard(
+                destination: dest,
+                flag: flag,
+                tripName: trip.name,
+                dates: dates,
+                days: days,
+                squadEmojis: squadEmojis,
+                accent: accent,
+                archetype: _archetypeFor(trip),
+                width: isWide ? 420 : 300,
+              ),
             ),
-          ),
-        ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.06),
+          ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.06);
+        }),
 
         const SizedBox(height: 24),
 

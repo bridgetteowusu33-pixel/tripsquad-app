@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/haptics.dart';
 import '../../../core/theme.dart';
 import '../../../models/models.dart';
+import '../../../widgets/me_sheet.dart';
 import '../../../widgets/passport_stamp.dart';
 import '../../../widgets/widgets.dart';
 
@@ -104,30 +105,38 @@ class _StampTabState extends ConsumerState<StampTab> {
 
         const SizedBox(height: 28),
 
-        // Stamp-shelf hint — points at Me sheet where the full
-        // collection lives.
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: TSColors.s2,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: TSColors.border),
-          ),
-          child: Row(children: [
-            const Text('📘', style: TextStyle(fontSize: 22)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('your passport is filling up',
-                      style: TSTextStyles.body(size: 14)),
-                  Text('tap your avatar to see the shelf',
-                      style: TSTextStyles.caption(color: TSColors.muted)),
-                ],
-              ),
+        // Stamp-shelf hint — tappable, opens the Me sheet where the
+        // full passport collection lives.
+        InkWell(
+          onTap: () {
+            TSHaptics.light();
+            MeSheet.show(context);
+          },
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: TSColors.s2,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: TSColors.border),
             ),
-          ]),
+            child: Row(children: [
+              const Text('📘', style: TextStyle(fontSize: 22)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('your passport is filling up',
+                        style: TSTextStyles.body(size: 14)),
+                    Text('tap to see your shelf',
+                        style: TSTextStyles.caption(color: TSColors.muted)),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: TSColors.muted, size: 20),
+            ]),
+          ),
         ),
       ],
     );

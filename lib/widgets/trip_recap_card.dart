@@ -176,7 +176,9 @@ class _TripRecapPainter extends CustomPainter {
         style: TextStyle(fontSize: w * 0.26, height: 1));
     y += w * 0.26 + w * 0.02;
 
-    // Destination (big)
+    // Destination (big). Constrain to inner width so long destination
+    // strings (e.g. "United Kingdom") wrap or shrink instead of bleeding
+    // out the side of the card.
     _draw(
       canvas,
       destination,
@@ -189,6 +191,7 @@ class _TripRecapPainter extends CustomPainter {
         height: 0.95,
         color: TSColors.text,
       ),
+      maxWidth: w - pad * 2,
     );
     y += w * 0.17;
 
@@ -240,10 +243,11 @@ class _TripRecapPainter extends CustomPainter {
         color: accent,
       ),
     );
-    // "days away" to the right of the number
+    // Day count label — recap card is shown post-trip, so this is
+    // a "days behind us" moment, not a countdown. Past-tense neutral.
     _draw(
       canvas,
-      days == 1 ? 'day away' : 'days away',
+      days == 1 ? 'day, made.' : 'days, made.',
       Offset(pad + w * 0.3, y + w * 0.12),
       style: TextStyle(
         fontFamily: 'Syne',

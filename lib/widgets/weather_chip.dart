@@ -113,12 +113,22 @@ class WeatherChip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Only show for trips within the Open-Meteo forecast window
-    // (~14 days). Further out is noise.
-    final delta = date.difference(DateTime.now()).inDays;
-    if (delta < 0 || delta > 14) return const SizedBox();
+    // Open-Meteo's forecast window is ~14 days. For trips beyond
+    // that (or in the past, which happens on live trips), fall back
+    // to TODAY's weather at the destination — still a useful signal
+    // ("lisbon is 22° right now") instead of an empty pill.
+    //
+    // Round "today" to midnight so the provider key is stable across
+    // rebuilds; otherwise DateTime.now() yields a fresh key every
+    // frame and the provider never finishes loading.
+    final n = DateTime.now();
+    final today = DateTime(n.year, n.month, n.day);
+    final reqDate = DateTime(date.year, date.month, date.day);
+    final delta = reqDate.difference(today).inDays;
+    final lookupDate = (delta < 0 || delta > 14) ? today : reqDate;
     final forecast = ref
-        .watch(forecastProvider((destination: destination, date: date)))
+        .watch(forecastProvider(
+            (destination: destination, date: lookupDate)))
         .valueOrNull;
     if (forecast == null) return const SizedBox();
     final unit = ref.watch(temperatureUnitProvider);

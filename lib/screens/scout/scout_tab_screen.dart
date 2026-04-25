@@ -240,7 +240,16 @@ class _ScoutTabScreenState extends ConsumerState<ScoutTabScreen>
   @override
   Widget build(BuildContext context) {
     final history = ref.watch(scoutHistoryProvider);
-    return TSScaffold(
+    // On iPad / wide screens, bump every Scout text via TextScaler so
+    // the chat reads comfortably at arm's-length tablet distance.
+    final isWide = MediaQuery.of(context).size.width >= 700;
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(
+        textScaler: isWide
+            ? const TextScaler.linear(1.22)
+            : MediaQuery.textScalerOf(context),
+      ),
+      child: TSScaffold(
       style: TSBackgroundStyle.ambient,
       accentColor: TSColors.purple,
       body: SafeArea(
@@ -546,6 +555,7 @@ class _ScoutTabScreenState extends ConsumerState<ScoutTabScreen>
             ]),
           ),
         ]),
+      ),
       ),
     );
   }
@@ -945,26 +955,28 @@ class _MyMessage extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
               ],
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: LinkifiedText(
-                    content: content,
-                    color: TSColors.text,
-                    size: 16,
+              // Lime-tinted transparent bubble — signals "this is you"
+              // without the heavy iMessage-green-block aesthetic.
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: TSColors.limeDim(0.10),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(18),
+                    topRight: Radius.circular(18),
+                    bottomLeft: Radius.circular(18),
+                    bottomRight: Radius.circular(4),
+                  ),
+                  border: Border.all(
+                    color: TSColors.limeDim(0.28),
+                    width: 1,
                   ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              // Subtle lime underline — the only visual signal of "this
-              // is you." Avoids the heavy green-bubble aesthetic.
-              Container(
-                height: 2,
-                width: 32,
-                decoration: BoxDecoration(
-                  color: TSColors.limeDim(0.55),
-                  borderRadius: BorderRadius.circular(1),
+                child: LinkifiedText(
+                  content: content,
+                  color: TSColors.text,
+                  size: 16,
                 ),
               ),
             ],

@@ -1,0 +1,1459 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL || 'https://zgtlwyjcxmmhicsccjhd.supabase.co';
+const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_fqyImmzqflidAOjs-S4IrQ_Q0yg1Prr';
+
+// Vibes must match the Flutter app exactly
+const vibes = [
+  { id: 'culture',   label: 'Culture',     emoji: '🏛️', desc: 'Art, history, food scenes' },
+  { id: 'city',      label: 'City Break',  emoji: '🌆', desc: 'Streets, cafés, energy' },
+  { id: 'beach',     label: 'Beach',       emoji: '🏖️', desc: 'Sun, sea, zero plans' },
+  { id: 'food',      label: 'Food & Drink',emoji: '🍜', desc: 'Markets, restaurants, wine' },
+  { id: 'party',     label: 'Party',       emoji: '🎉', desc: 'Nightlife, music, chaos' },
+  { id: 'adventure', label: 'Adventure',   emoji: '🏔️', desc: 'Hikes, thrills, outdoors' },
+  { id: 'nature',    label: 'Nature',      emoji: '🌿', desc: 'Forests, escape' },
+  { id: 'wellness',  label: 'Wellness',    emoji: '🧘', desc: 'Spas, slow mornings' },
+];
+
+const emojis = ['😎','🌸','🔥','🌊','✨','⚡','🦋','🎯','🌙','🎨','🦊','🐬'];
+---
+
+<BaseLayout title="Join the trip — TripSquad" description="Your squad is planning a trip. Fill in your preferences.">
+
+<main class="join-main">
+  <div class="container">
+
+    <!-- Loading state -->
+    <div id="loading" class="join-loading">
+      <div class="join-logo">✈️</div>
+      <p>Loading trip details...</p>
+    </div>
+
+    <!-- Error state -->
+    <div id="error" class="join-error" style="display:none;">
+      <div class="join-logo">😕</div>
+      <h1>Link not found</h1>
+      <p id="error-msg">This invite link may have expired or is invalid.</p>
+      <a href="/" class="join-btn">Learn about TripSquad</a>
+    </div>
+
+    <!-- Form -->
+    <div id="form-container" style="display:none;">
+
+      <!-- Header -->
+      <div class="join-header">
+        <div class="join-logo">✈️</div>
+        <h1 id="trip-name" class="join-title">Loading...</h1>
+        <p class="join-sub">Fill this in so the squad can plan around you. Takes about 60 seconds.</p>
+        <div class="join-badge">🔒 Anonymous — nobody sees your budget</div>
+      </div>
+
+      <!-- Progress -->
+      <div class="join-progress">
+        <div class="join-progress-bar" id="progress-bar" style="width:20%"></div>
+      </div>
+      <p class="join-step-label" id="step-label">Step 1 of 5</p>
+
+      <!-- Step 1: Nickname + Emoji -->
+      <div class="join-step" id="step-1">
+        <h2>What should we call you?</h2>
+        <input type="text" id="nickname" class="join-input" placeholder="Your name or nickname" maxlength="20" autofocus />
+        <h3>Pick your avatar</h3>
+        <div class="join-emoji-grid" id="emoji-grid">
+          {emojis.map((e, i) => (
+            <button class={`join-emoji-btn${i === 0 ? ' selected' : ''}`} data-emoji={e} type="button">{e}</button>
+          ))}
+        </div>
+      </div>
+
+      <!-- Step 2: Budget -->
+      <div class="join-step" id="step-2" style="display:none;">
+        <h2>What is your budget per person?</h2>
+        <p class="join-hint">This stays anonymous. The squad only sees the group range.</p>
+        <div class="join-budget-row">
+          <div class="join-budget-field">
+            <label>Minimum</label>
+            <div class="join-input-wrap">
+              <span class="join-currency">$</span>
+              <input type="number" id="budget-min" class="join-input join-input-budget" placeholder="500" min="0" />
+            </div>
+          </div>
+          <div class="join-budget-field">
+            <label>Maximum</label>
+            <div class="join-input-wrap">
+              <span class="join-currency">$</span>
+              <input type="number" id="budget-max" class="join-input join-input-budget" placeholder="2000" min="0" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Vibes -->
+      <div class="join-step" id="step-3" style="display:none;">
+        <h2>What is your vibe?</h2>
+        <p class="join-hint">Pick up to 3.</p>
+        <div class="join-vibe-grid">
+          {vibes.map((v) => (
+            <button class="join-vibe-btn" data-vibe={v.id} type="button">
+              <span class="join-vibe-emoji">{v.emoji}</span>
+              <span class="join-vibe-label">{v.label}</span>
+              <span class="join-vibe-desc">{v.desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <!-- Step 4: Destination preferences -->
+      <div class="join-step" id="step-4" style="display:none;">
+        <h2>Where do you want to go?</h2>
+        <p class="join-hint">Pick from the host's shortlist or suggest your own.</p>
+        <div class="join-dest-grid" id="dest-grid">
+          <!-- Populated by JS from trip data -->
+        </div>
+        <div class="join-custom-dest">
+          <input type="text" id="custom-dest" class="join-input" placeholder="Suggest a destination..." />
+          <button type="button" id="add-dest-btn" class="join-add-btn">+</button>
+        </div>
+      </div>
+
+      <!-- Step 5: Confirm -->
+      <div class="join-step" id="step-5" style="display:none;">
+        <h2>Ready to join?</h2>
+        <div class="join-summary" id="summary"></div>
+      </div>
+
+      <!-- Nav buttons -->
+      <div class="join-nav">
+        <button type="button" id="back-btn" class="join-btn join-btn-ghost" style="display:none;">← Back</button>
+        <button type="button" id="next-btn" class="join-btn join-btn-primary">Next →</button>
+      </div>
+
+    </div>
+
+    <!-- Success state -->
+    <div id="success" style="display:none;">
+      <div class="locked-in">
+        <!-- Animated check -->
+        <div class="locked-check">
+          <svg viewBox="0 0 52 52" class="locked-check-svg">
+            <circle cx="26" cy="26" r="25" fill="none" stroke="#CCFF45" stroke-width="2" class="locked-circle"/>
+            <path fill="none" stroke="#CCFF45" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M14 27l7 7 16-16" class="locked-path"/>
+          </svg>
+        </div>
+
+        <h1 class="locked-title">you're locked in 🔒</h1>
+        <p class="locked-sub">your vibes are saved. stay here — voting drops when the host is ready.</p>
+
+        <!-- Your preferences as pills -->
+        <div class="locked-prefs" id="locked-prefs"></div>
+
+        <!-- Live status -->
+        <div class="locked-status">
+          <div class="locked-status-inner">
+            <div class="locked-pulse"></div>
+            <span>waiting for the squad...</span>
+          </div>
+          <p class="locked-hint">this page auto-updates. no need to refresh.</p>
+        </div>
+
+        <!-- App nudge -->
+        <div class="locked-app">
+          <span>📲</span>
+          <div>
+            <p class="locked-app-title">want the full experience?</p>
+            <p class="locked-app-sub">real-time updates, itineraries, and more</p>
+          </div>
+          <a href="/get" class="locked-app-btn" id="locked-app-cta">get app</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Voting state -->
+    <div id="voting-container" style="display:none;">
+      <div class="vote-header">
+        <div style="font-size:48px; text-align:center; margin-bottom:12px;">🗳️</div>
+        <h1 id="vote-trip-name" class="vote-title">it's decision time</h1>
+        <p class="vote-sub">the squad's vibes are in. pick your fave destination.</p>
+      </div>
+
+      <div id="vote-nickname-step">
+        <h2>First, what is your name?</h2>
+        <input type="text" id="vote-nickname" class="join-input" placeholder="Your name or nickname" maxlength="20" />
+        <div style="height:16px"></div>
+        <button type="button" id="vote-nickname-btn" class="join-btn join-btn-primary" style="width:100%;">Next: See options →</button>
+      </div>
+
+      <div id="vote-options" style="display:none;">
+        <div id="vote-cards"></div>
+        <div style="height:20px"></div>
+        <button type="button" id="cast-vote-btn" class="join-btn join-btn-primary" style="width:100%;">Cast my vote ✦</button>
+      </div>
+    </div>
+
+    <!-- Vote success -->
+    <div id="vote-success" style="display:none;">
+      <div class="join-success">
+        <div class="join-logo" style="font-size:64px;">🎉</div>
+        <h1>Vote cast!</h1>
+        <p>Your vote has been submitted. The host will reveal the winner soon.</p>
+        <a href="/get" class="join-btn join-btn-primary" style="margin-top:24px;" id="vote-success-cta">Get the TripSquad app</a>
+      </div>
+    </div>
+
+    <!-- Already revealed -->
+    <div id="revealed-container" style="display:none;">
+      <div class="join-success">
+        <div class="join-logo" style="font-size:64px;">✈️</div>
+        <h1 id="revealed-dest">Destination decided!</h1>
+        <p>The squad has spoken. Get the app to see the full itinerary.</p>
+        <a href="/get" class="join-btn join-btn-primary" style="margin-top:24px;" id="revealed-cta">Get the TripSquad app</a>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+</BaseLayout>
+
+<script define:vars={{ SUPABASE_URL, SUPABASE_ANON_KEY }}>
+  // State
+  let step = 1;
+  let tripId = '';
+  let tripData = null;
+  let selectedEmoji = '😎';
+  let selectedVibes = [];
+  let selectedDests = [];
+  let tripOptions = [];
+  let selectedVoteOptionId = null;
+  let voteNickname = '';
+
+  const $  = (s) => document.querySelector(s);
+  const $$ = (s) => document.querySelectorAll(s);
+
+  // Extract token from query param: /join/?t=abc12345
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get('t') || '';
+
+  // Propagate the invite token on every "get app" CTA so `/get` can
+  // try to deep-link the invitee straight into the right trip.
+  if (token) {
+    const ctas = ['locked-app-cta', 'vote-success-cta', 'revealed-cta'];
+    for (const id of ctas) {
+      const el = document.getElementById(id);
+      if (el) el.href = `/get?t=${encodeURIComponent(token)}`;
+    }
+  }
+
+  // ── Load trip ──────────────────────────────────────────────
+  async function loadTrip() {
+    if (!token) {
+      showError('No invite token found. Check your link.');
+      return;
+    }
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/trips?invite_token=eq.${token}&select=id,name,status,vibes,destination_shortlist,selected_destination,selected_flag,created_at,trip_options(id,destination,country,flag,tagline,estimated_cost_pp,duration_days,vibe_match,compatibility_score,vote_count)`,
+        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+      );
+      const data = await res.json();
+
+      if (!data || data.length === 0) {
+        showError('This invite link is not valid.');
+        return;
+      }
+
+      const trip = data[0];
+
+      // Check 7-day expiry
+      const created = new Date(trip.created_at);
+      const now = new Date();
+      const daysDiff = (now - created) / (1000 * 60 * 60 * 24);
+      if (daysDiff > 7) {
+        showError('This invite link has expired. Ask the host for a new one.');
+        return;
+      }
+
+      tripId = trip.id;
+      tripData = trip;
+      $('#trip-name').textContent = trip.name;
+
+      $('#loading').style.display = 'none';
+
+      // Route based on trip status
+      if (trip.status === 'revealed' || trip.status === 'planning' || trip.status === 'live' || trip.status === 'completed') {
+        // Trip already decided
+        const destName = trip.selected_destination || 'a destination';
+        const destFlag = trip.selected_flag || '✈️';
+        $('#revealed-dest').textContent = `${destFlag} ${destName}!`;
+        $('#revealed-container').style.display = 'block';
+        return;
+      }
+
+      if (trip.status === 'voting' && trip.trip_options && trip.trip_options.length > 0) {
+        // Show voting UI
+        $('#vote-trip-name').textContent = trip.name;
+        tripOptions = trip.trip_options;
+        $('#voting-container').style.display = 'block';
+        return;
+      }
+
+      // Default: show preference form
+      $('#form-container').style.display = 'block';
+    } catch (e) {
+      showError('Something went wrong. Please try again.');
+    }
+  }
+
+  function showError(msg) {
+    $('#loading').style.display = 'none';
+    $('#error').style.display = 'block';
+    $('#error-msg').textContent = msg;
+  }
+
+  // ── Populate destinations (called when Step 4 becomes visible) ──
+  let destsPopulated = false;
+  function populateDestinations() {
+    if (destsPopulated) return;
+    destsPopulated = true;
+    const grid = $('#dest-grid');
+    grid.innerHTML = '';
+    (tripData.destination_shortlist || []).forEach((dest) => {
+      const btn = document.createElement('button');
+      btn.className = 'join-dest-btn';
+      btn.type = 'button';
+      btn.textContent = dest;
+      btn.setAttribute('data-dest', dest);
+      btn.style.cursor = 'pointer';
+      btn.style.touchAction = 'manipulation';
+      btn.addEventListener('click', function() {
+        const isSelected = this.getAttribute('data-selected') === 'true';
+        if (isSelected) {
+          this.setAttribute('data-selected', 'false');
+          this.style.borderColor = 'rgba(255,255,255,0.12)';
+          this.style.background = '#171728';
+          this.style.color = '#C0BCDA';
+          this.textContent = dest;
+          selectedDests = selectedDests.filter(d => d !== dest);
+        } else {
+          this.setAttribute('data-selected', 'true');
+          this.style.borderColor = '#CCFF45';
+          this.style.background = 'rgba(204,255,69,0.15)';
+          this.style.color = '#CCFF45';
+          this.textContent = dest + ' ✓';
+          selectedDests.push(dest);
+        }
+      });
+      grid.appendChild(btn);
+    });
+  }
+
+  // ── Step navigation ────────────────────────────────────────
+  function showStep(n) {
+    step = n;
+    for (let i = 1; i <= 5; i++) {
+      const el = $(`#step-${i}`);
+      if (el) el.style.display = i === n ? 'block' : 'none';
+    }
+    $('#back-btn').style.display = n > 1 ? 'inline-flex' : 'none';
+    $('#next-btn').textContent = n === 5 ? 'Submit ✦' : 'Next →';
+    $('#progress-bar').style.width = `${n * 20}%`;
+    $('#step-label').textContent = `Step ${n} of 5`;
+
+    // Populate destinations when Step 4 becomes visible
+    if (n === 4 && tripData) populateDestinations();
+
+    if (n === 5) buildSummary();
+  }
+
+  function buildSummary() {
+    const nickname = $('#nickname').value.trim() || 'Anonymous';
+    const bMin = $('#budget-min').value || '—';
+    const bMax = $('#budget-max').value || '—';
+    $('#summary').innerHTML = `
+      <div class="join-summary-row"><span>Name</span><strong>${nickname} ${selectedEmoji}</strong></div>
+      <div class="join-summary-row"><span>Budget</span><strong>$${bMin} – $${bMax}</strong></div>
+      <div class="join-summary-row"><span>Vibes</span><strong>${selectedVibes.join(', ') || 'None'}</strong></div>
+      <div class="join-summary-row"><span>Destinations</span><strong>${selectedDests.join(', ') || 'None'}</strong></div>
+    `;
+  }
+
+  // ── Validation ─────────────────────────────────────────────
+  function validateStep() {
+    if (step === 1) {
+      const name = $('#nickname').value.trim();
+      if (!name) { alert('Enter your name or nickname.'); return false; }
+    }
+    if (step === 2) {
+      const min = parseInt($('#budget-min').value);
+      const max = parseInt($('#budget-max').value);
+      if (isNaN(min) || isNaN(max)) { alert('Enter your budget range.'); return false; }
+      if (min > max) { alert('Minimum budget cannot exceed maximum.'); return false; }
+    }
+    if (step === 3 && selectedVibes.length === 0) {
+      alert('Pick at least one vibe.'); return false;
+    }
+    return true;
+  }
+
+  // ── Submit ─────────────────────────────────────────────────
+  async function submitForm() {
+    const nickname = $('#nickname').value.trim();
+    const budgetMin = parseInt($('#budget-min').value) || 0;
+    const budgetMax = parseInt($('#budget-max').value) || 0;
+
+    $('#next-btn').textContent = 'Submitting...';
+    $('#next-btn').disabled = true;
+
+    try {
+      // Check if member with this nickname already exists for this trip
+      const checkRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/squad_members?trip_id=eq.${tripId}&nickname=eq.${encodeURIComponent(nickname)}&select=id`,
+        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+      );
+      const existing = await checkRes.json();
+
+      const memberData = {
+        trip_id: tripId,
+        nickname,
+        emoji: selectedEmoji,
+        role: 'member',
+        status: 'submitted',
+        vibes: selectedVibes,
+        budget_min: budgetMin,
+        budget_max: budgetMax,
+        destination_prefs: selectedDests,
+        responded_at: new Date().toISOString(),
+      };
+
+      let res;
+      if (existing && existing.length > 0) {
+        // Update existing member
+        res = await fetch(`${SUPABASE_URL}/rest/v1/squad_members?id=eq.${existing[0].id}`, {
+          method: 'PATCH',
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal',
+          },
+          body: JSON.stringify(memberData),
+        });
+      } else {
+        // Insert new member
+        res = await fetch(`${SUPABASE_URL}/rest/v1/squad_members`, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal',
+          },
+          body: JSON.stringify(memberData),
+        });
+      }
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Submission failed');
+      }
+
+      // Show success and start polling for voting
+      $('#form-container').style.display = 'none';
+      $('#success').style.display = 'block';
+      // Show preferences as visual pills
+      const prefsEl = $('#locked-prefs');
+      if (prefsEl) {
+        let pillsHtml = `<span class="locked-pill">${selectedEmoji} ${nickname}</span>`;
+        selectedVibes.forEach(v => { pillsHtml += `<span class="locked-pill locked-pill-lime">${v}</span>`; });
+        if ($('#budget-min').value) pillsHtml += `<span class="locked-pill">$${$('#budget-min').value}–$${$('#budget-max').value}</span>`;
+        selectedDests.forEach(d => { pillsHtml += `<span class="locked-pill locked-pill-outline">${d}</span>`; });
+        prefsEl.innerHTML = pillsHtml;
+      }
+
+      // Poll every 5 seconds to check if voting has started
+      voteNickname = nickname;
+      const pollInterval = setInterval(async () => {
+        try {
+          const pollRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/trips?invite_token=eq.${token}&select=status,trip_options(id,destination,country,flag,tagline,estimated_cost_pp,duration_days,vibe_match,compatibility_score,vote_count)`,
+            { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+          );
+          const pollData = await pollRes.json();
+          if (pollData && pollData.length > 0 && pollData[0].status === 'voting' && pollData[0].trip_options && pollData[0].trip_options.length > 0) {
+            clearInterval(pollInterval);
+            tripOptions = pollData[0].trip_options;
+            $('#success').style.display = 'none';
+            $('#vote-trip-name').textContent = tripData.name;
+            // Skip nickname step since we already have it
+            $('#vote-nickname-step').style.display = 'none';
+            renderVoteCards();
+            $('#vote-options').style.display = 'block';
+            $('#voting-container').style.display = 'block';
+          }
+        } catch (_) {}
+      }, 3000);
+    } catch (e) {
+      alert('Something went wrong: ' + e.message);
+      $('#next-btn').textContent = 'Submit ✦';
+      $('#next-btn').disabled = false;
+    }
+  }
+
+  // ── Event listeners ────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    loadTrip();
+
+    // Emoji selection
+    $$('.join-emoji-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        $$('.join-emoji-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedEmoji = btn.dataset.emoji;
+      });
+    });
+
+    // Vibe selection (max 3)
+    $$('.join-vibe-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const vibe = btn.dataset.vibe;
+        if (btn.classList.contains('selected')) {
+          btn.classList.remove('selected');
+          selectedVibes = selectedVibes.filter(v => v !== vibe);
+        } else if (selectedVibes.length < 3) {
+          btn.classList.add('selected');
+          selectedVibes.push(vibe);
+        }
+      });
+    });
+
+    // Custom destination
+    $('#add-dest-btn').addEventListener('click', () => {
+      const input = $('#custom-dest');
+      const val = input.value.trim();
+      if (!val) return;
+      selectedDests.push(val);
+      const btn = document.createElement('button');
+      btn.className = 'join-dest-btn';
+      btn.type = 'button';
+      btn.textContent = val + ' ✓';
+      btn.setAttribute('data-dest', val);
+      btn.setAttribute('data-selected', 'true');
+      btn.style.borderColor = '#CCFF45';
+      btn.style.background = 'rgba(204,255,69,0.15)';
+      btn.style.color = '#CCFF45';
+      btn.style.cursor = 'pointer';
+      btn.style.touchAction = 'manipulation';
+      btn.addEventListener('click', function() {
+        const isSelected = this.getAttribute('data-selected') === 'true';
+        if (isSelected) {
+          this.setAttribute('data-selected', 'false');
+          this.style.borderColor = 'rgba(255,255,255,0.12)';
+          this.style.background = '#171728';
+          this.style.color = '#C0BCDA';
+          this.textContent = val;
+          selectedDests = selectedDests.filter(d => d !== val);
+        } else {
+          this.setAttribute('data-selected', 'true');
+          this.style.borderColor = '#CCFF45';
+          this.style.background = 'rgba(204,255,69,0.15)';
+          this.style.color = '#CCFF45';
+          this.textContent = val + ' ✓';
+          selectedDests.push(val);
+        }
+      });
+      $('#dest-grid').appendChild(btn);
+      input.value = '';
+    });
+
+    // Next / Back
+    $('#next-btn').addEventListener('click', () => {
+      if (!validateStep()) return;
+      if (step === 5) { submitForm(); return; }
+      showStep(step + 1);
+    });
+
+    $('#back-btn').addEventListener('click', () => {
+      if (step > 1) showStep(step - 1);
+    });
+
+    // ── Voting flow ──────────────────────────────────────────
+    const nicknameBtn = $('#vote-nickname-btn');
+    if (nicknameBtn) {
+      nicknameBtn.addEventListener('click', () => {
+        voteNickname = $('#vote-nickname').value.trim();
+        if (!voteNickname) { alert('Enter your name.'); return; }
+        $('#vote-nickname-step').style.display = 'none';
+        renderVoteCards();
+        $('#vote-options').style.display = 'block';
+      });
+    }
+
+    const castBtn = $('#cast-vote-btn');
+    if (castBtn) {
+      castBtn.addEventListener('click', async () => {
+        if (!selectedVoteOptionId) { alert('Pick a destination first.'); return; }
+        castBtn.textContent = 'Submitting...';
+        castBtn.disabled = true;
+        try {
+          // Check if member already exists, update status to voted
+          const vCheckRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/squad_members?trip_id=eq.${tripId}&nickname=eq.${encodeURIComponent(voteNickname)}&select=id`,
+            { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+          );
+          const vExisting = await vCheckRes.json();
+
+          if (vExisting && vExisting.length > 0) {
+            // Update existing member status to voted
+            await fetch(`${SUPABASE_URL}/rest/v1/squad_members?id=eq.${vExisting[0].id}`, {
+              method: 'PATCH',
+              headers: {
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json',
+                Prefer: 'return=minimal',
+              },
+              body: JSON.stringify({ status: 'voted', responded_at: new Date().toISOString() }),
+            });
+          } else {
+            // New voter who did not fill preferences
+            await fetch(`${SUPABASE_URL}/rest/v1/squad_members`, {
+              method: 'POST',
+              headers: {
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json',
+                Prefer: 'return=minimal',
+              },
+              body: JSON.stringify({
+                trip_id: tripId,
+                nickname: voteNickname,
+                emoji: '😎',
+                role: 'member',
+                status: 'voted',
+                vibes: [],
+                budget_min: 0,
+                budget_max: 0,
+                destination_prefs: [],
+                responded_at: new Date().toISOString(),
+              }),
+            });
+          }
+          // Atomically increment vote count via RPC
+          if (selectedVoteOptionId) {
+            await fetch(`${SUPABASE_URL}/rest/v1/rpc/increment_option_vote`, {
+              method: 'POST',
+              headers: {
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ option_id: selectedVoteOptionId }),
+            });
+          }
+          $('#voting-container').style.display = 'none';
+          $('#vote-success').style.display = 'block';
+        } catch (e) {
+          alert('Something went wrong: ' + e.message);
+          castBtn.textContent = 'Cast my vote ✦';
+          castBtn.disabled = false;
+        }
+      });
+    }
+  });
+
+  function renderVoteCards() {
+    const container = $('#vote-cards');
+    container.innerHTML = '';
+    tripOptions.forEach((opt) => {
+      const card = document.createElement('div');
+      card.className = 'vote-card';
+      card.setAttribute('data-option-id', opt.id);
+      card.innerHTML = `
+        <div class="vote-card-top">
+          <div class="vote-card-flag-big">${opt.flag || '🌍'}</div>
+          <div class="vote-card-info">
+            <div class="vote-card-dest">${opt.destination}, ${opt.country}</div>
+            <div class="vote-card-tagline">${opt.tagline || ''}</div>
+          </div>
+          <div class="vote-card-check">✓</div>
+        </div>
+        ${opt.description ? `<div class="vote-card-desc">${opt.description}</div>` : ''}
+        <div class="vote-card-pills">
+          <span class="vote-pill">~$${opt.estimated_cost_pp || '?'}</span>
+          <span class="vote-pill">${opt.duration_days || '?'} days</span>
+          ${(opt.vibe_match || []).map(v => `<span class="vote-pill vote-pill-lime">${v}</span>`).join('')}
+        </div>
+        <div class="vote-card-compat">
+          <span>squad compatibility</span>
+          <span class="vote-card-pct">${Math.round((opt.compatibility_score || 0) * 100)}%</span>
+        </div>
+        <div class="vote-card-bar">
+          <div class="vote-card-bar-fill" style="width:${(opt.compatibility_score || 0) * 100}%"></div>
+        </div>
+      `;
+      card.style.cursor = 'pointer';
+      card.style.touchAction = 'manipulation';
+      card.onclick = function() {
+        // Deselect all
+        const allCards = container.querySelectorAll('.vote-card');
+        allCards.forEach(function(c) {
+          c.style.cssText = 'cursor:pointer; touch-action:manipulation; padding:20px; background:#171728; border:2px solid rgba(255,255,255,0.08); border-radius:18px; margin-bottom:14px; transition:all 0.25s;';
+          const chk = c.querySelector('.vote-card-check');
+          if (chk) chk.style.cssText = 'width:28px;height:28px;min-width:28px;max-width:28px;flex-shrink:0;border-radius:50%;border:2px solid rgba(255,255,255,0.12);background:transparent;color:transparent;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;line-height:1;';
+          const dest = c.querySelector('.vote-card-dest');
+          if (dest) dest.style.color = '#F0EDF8';
+          const pct = c.querySelector('.vote-card-pct');
+          if (pct) pct.style.color = '#9B6DFF';
+          const bar = c.querySelector('.vote-card-bar-fill');
+          if (bar) bar.style.background = '#9B6DFF';
+        });
+        // Select this one — full card highlight
+        this.style.cssText = 'cursor:pointer; touch-action:manipulation; padding:20px; background:rgba(204,255,69,0.08); border:2px solid #CCFF45; border-radius:18px; margin-bottom:14px; box-shadow:0 4px 24px rgba(204,255,69,0.2); transform:scale(1.01); transition:all 0.25s;';
+        const chk = this.querySelector('.vote-card-check');
+        if (chk) chk.style.cssText = 'width:28px;height:28px;min-width:28px;max-width:28px;flex-shrink:0;border-radius:50%;border:2px solid #CCFF45;background:#CCFF45;color:#08080E;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;line-height:1;box-shadow:0 0 8px rgba(204,255,69,0.3);';
+        const dest = this.querySelector('.vote-card-dest');
+        if (dest) dest.style.color = '#CCFF45';
+        const pct = this.querySelector('.vote-card-pct');
+        if (pct) pct.style.color = '#CCFF45';
+        const bar = this.querySelector('.vote-card-bar-fill');
+        if (bar) bar.style.background = '#CCFF45';
+        selectedVoteOptionId = opt.id;
+      };
+      container.appendChild(card);
+    });
+  }
+</script>
+
+<style>
+  .join-main {
+    min-height: 100vh;
+    padding: 60px 0 80px;
+    position: relative;
+  }
+
+  .join-main::before {
+    content: '';
+    position: absolute;
+    top: -100px;
+    left: -100px;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(204, 255, 69, 0.08), transparent 70%);
+    pointer-events: none;
+  }
+
+  .join-logo {
+    font-size: 48px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  /* ── Loading / Error / Success ── */
+  .join-loading, .join-error, .join-success {
+    text-align: center;
+    padding: 80px 0;
+  }
+
+  .join-loading p, .join-error p, .join-success p {
+    color: var(--ts-text2);
+    font-size: 16px;
+    margin-top: 8px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
+  }
+
+  .join-error h1, .join-success h1 {
+    font-family: var(--font-heading);
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+
+  .join-success h1 { color: var(--ts-lime); }
+
+  .join-waiting {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 24px;
+    padding: 12px 20px;
+    background: rgba(204, 255, 69, 0.06);
+    border: 1px solid rgba(204, 255, 69, 0.15);
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ts-lime);
+  }
+
+  .join-waiting-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ts-lime);
+    animation: waitPulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes waitPulse {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  /* ── Locked In Screen ── */
+  .locked-in {
+    text-align: center;
+    padding: 60px 0 40px;
+  }
+
+  .locked-check {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 20px;
+  }
+
+  .locked-check-svg {
+    width: 64px;
+    height: 64px;
+  }
+
+  .locked-circle {
+    stroke-dasharray: 157;
+    stroke-dashoffset: 157;
+    animation: drawCircle 0.6s ease-out 0.2s forwards;
+  }
+
+  .locked-path {
+    stroke-dasharray: 50;
+    stroke-dashoffset: 50;
+    animation: drawCheck 0.4s ease-out 0.7s forwards;
+  }
+
+  @keyframes drawCircle {
+    to { stroke-dashoffset: 0; }
+  }
+
+  @keyframes drawCheck {
+    to { stroke-dashoffset: 0; }
+  }
+
+  .locked-title {
+    font-family: var(--font-heading);
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--ts-lime);
+    margin: 0 0 8px;
+  }
+
+  .locked-sub {
+    color: var(--ts-text2);
+    font-size: 15px;
+    line-height: 1.5;
+    max-width: 320px;
+    margin: 0 auto 24px;
+  }
+
+  .locked-prefs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+
+  .locked-pill {
+    padding: 6px 14px;
+    background: var(--ts-s2);
+    border: 1px solid var(--ts-border2);
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ts-text2);
+  }
+
+  .locked-pill-lime {
+    border-color: rgba(204, 255, 69, 0.25);
+    color: var(--ts-lime);
+    background: rgba(204, 255, 69, 0.08);
+  }
+
+  .locked-pill-outline {
+    border-color: var(--ts-border2);
+    color: var(--ts-muted);
+    background: transparent;
+  }
+
+  .locked-status {
+    margin-bottom: 24px;
+  }
+
+  .locked-status-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    background: rgba(204, 255, 69, 0.06);
+    border: 1px solid rgba(204, 255, 69, 0.15);
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ts-lime);
+  }
+
+  .locked-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ts-lime);
+    animation: waitPulse 1.5s ease-in-out infinite;
+  }
+
+  .locked-hint {
+    color: var(--ts-muted);
+    font-size: 12px;
+    margin: 8px 0 0;
+  }
+
+  .locked-app {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 360px;
+    margin: 0 auto;
+    padding: 16px 20px;
+    background: var(--ts-s1);
+    border: 1px solid var(--ts-border2);
+    border-radius: 14px;
+    text-align: left;
+  }
+
+  .locked-app span { font-size: 24px; }
+
+  .locked-app-title {
+    font-family: var(--font-heading);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ts-text);
+    margin: 0;
+  }
+
+  .locked-app-sub {
+    font-size: 12px;
+    color: var(--ts-muted);
+    margin: 2px 0 0;
+  }
+
+  .locked-app-btn {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    background: var(--ts-lime);
+    color: var(--ts-bg);
+    font-family: var(--font-heading);
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 999px;
+    text-decoration: none;
+    margin-left: auto;
+  }
+
+  /* ── Vote Header ── */
+  .vote-title {
+    font-family: var(--font-heading);
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--ts-text);
+    margin: 0 0 8px;
+    text-align: center;
+  }
+
+  .vote-sub {
+    color: var(--ts-text2);
+    font-size: 15px;
+    text-align: center;
+    margin: 0 0 24px;
+  }
+
+  .join-success-card {
+    max-width: 360px;
+    margin: 24px auto 0;
+    background: var(--ts-s2);
+    border: 1px solid var(--ts-border2);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  /* ── Header ── */
+  .join-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .join-title {
+    font-family: var(--font-heading);
+    font-size: clamp(24px, 5vw, 32px);
+    font-weight: 800;
+    color: var(--ts-text);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+
+  .join-sub {
+    color: var(--ts-text2);
+    font-size: 15px;
+    line-height: 1.5;
+    max-width: 400px;
+    margin: 0 auto 12px;
+  }
+
+  .join-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    background: rgba(204, 255, 69, 0.08);
+    border: 1px solid rgba(204, 255, 69, 0.2);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ts-lime);
+  }
+
+  /* ── Progress ── */
+  .join-progress {
+    height: 4px;
+    background: var(--ts-s3);
+    border-radius: 2px;
+    margin: 24px 0 8px;
+    overflow: hidden;
+  }
+
+  .join-progress-bar {
+    height: 100%;
+    background: var(--ts-lime);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  .join-step-label {
+    font-family: var(--font-heading);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ts-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-bottom: 24px;
+  }
+
+  /* ── Steps ── */
+  .join-step h2 {
+    font-family: var(--font-heading);
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+
+  .join-step h3 {
+    font-family: var(--font-heading);
+    font-size: 16px;
+    font-weight: 700;
+    margin: 20px 0 10px;
+  }
+
+  .join-hint {
+    color: var(--ts-text2);
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+
+  /* ── Inputs ── */
+  .join-input {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--ts-s2);
+    border: 1px solid var(--ts-border2);
+    border-radius: 10px;
+    color: var(--ts-text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .join-input:focus {
+    border-color: var(--ts-lime);
+  }
+
+  .join-input::placeholder {
+    color: var(--ts-muted);
+  }
+
+  /* ── Budget ── */
+  .join-budget-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .join-budget-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ts-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+  }
+
+  .join-input-wrap {
+    position: relative;
+  }
+
+  .join-currency {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ts-muted);
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .join-input-budget {
+    padding-left: 32px;
+  }
+
+  /* ── Emoji grid ── */
+  .join-emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+  }
+
+  .join-emoji-btn {
+    width: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    background: var(--ts-s2);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+  }
+
+  .join-emoji-btn:hover { transform: scale(1.08); }
+  .join-emoji-btn.selected {
+    border-color: var(--ts-lime);
+    background: rgba(204, 255, 69, 0.1);
+  }
+
+  /* ── Vibe grid ── */
+  .join-vibe-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .join-vibe-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 14px 16px;
+    background: var(--ts-s2);
+    border: 1.5px solid var(--ts-border2);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    text-align: left;
+  }
+
+  .join-vibe-btn:hover { border-color: rgba(255, 255, 255, 0.2); }
+  .join-vibe-btn.selected {
+    border-color: var(--ts-lime);
+    background: rgba(204, 255, 69, 0.08);
+  }
+
+  .join-vibe-emoji { font-size: 22px; margin-bottom: 4px; }
+  .join-vibe-label {
+    font-family: var(--font-heading);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ts-text);
+  }
+  .join-vibe-desc {
+    font-size: 12px;
+    color: var(--ts-muted);
+    margin-top: 2px;
+  }
+
+  /* ── Destination grid ── */
+  .join-dest-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .join-dest-btn {
+    padding: 10px 16px;
+    background: var(--ts-s2);
+    border: 1.5px solid var(--ts-border2);
+    border-radius: 999px;
+    color: var(--ts-text2);
+    font-family: var(--font-body);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .join-dest-btn:hover { border-color: rgba(255, 255, 255, 0.2); }
+  .join-dest-btn.selected {
+    border-color: var(--ts-lime) !important;
+    background: rgba(204, 255, 69, 0.15) !important;
+    color: var(--ts-lime) !important;
+    box-shadow: 0 0 0 1px var(--ts-lime);
+  }
+  .join-dest-btn.selected::after {
+    content: ' ✓';
+  }
+
+  .join-custom-dest {
+    display: flex;
+    gap: 8px;
+  }
+
+  .join-add-btn {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ts-s2);
+    border: 1.5px solid var(--ts-border2);
+    border-radius: 10px;
+    color: var(--ts-lime);
+    font-size: 22px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .join-add-btn:hover { background: var(--ts-s3); }
+
+  /* ── Summary ── */
+  .join-summary {
+    background: var(--ts-s2);
+    border: 1px solid var(--ts-border2);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 12px;
+  }
+
+  .join-summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--ts-border);
+    font-size: 14px;
+  }
+
+  .join-summary-row:last-child { border-bottom: none; }
+  .join-summary-row span { color: var(--ts-muted); }
+  .join-summary-row strong { color: var(--ts-text); }
+
+  /* ── Buttons ── */
+  .join-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 28px;
+  }
+
+  .join-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 28px;
+    font-family: var(--font-heading);
+    font-size: 15px;
+    font-weight: 700;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .join-btn:hover { transform: translateY(-1px); }
+
+  .join-btn-primary {
+    background: var(--ts-lime);
+    color: var(--ts-bg);
+    box-shadow: 0 8px 24px rgba(204, 255, 69, 0.25);
+    margin-left: auto;
+  }
+
+  .join-btn-primary:hover {
+    box-shadow: 0 12px 32px rgba(204, 255, 69, 0.35);
+  }
+
+  .join-btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .join-btn-ghost {
+    background: transparent;
+    color: var(--ts-text2);
+    border: 1px solid var(--ts-border2);
+  }
+
+  .join-btn-ghost:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--ts-s2);
+  }
+
+  /* ── Responsive ── */
+  /* ── Vote Cards ── */
+  .vote-card {
+    padding: 20px;
+    background: var(--ts-s2);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    margin-bottom: 14px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .vote-card:active {
+    transform: scale(0.98) !important;
+  }
+
+  .vote-card-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+
+  .vote-card-flag-big {
+    font-size: 40px;
+    flex-shrink: 0;
+  }
+
+  .vote-card-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .vote-card-dest {
+    font-family: var(--font-heading);
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ts-text);
+    line-height: 1.2;
+  }
+
+  .vote-card-tagline {
+    font-size: 13px;
+    color: var(--ts-text2);
+    margin-top: 3px;
+  }
+
+  .vote-card-check {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    max-width: 28px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    background: transparent;
+    color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .vote-card-desc {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ts-text2);
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .vote-card-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .vote-pill {
+    padding: 5px 12px;
+    background: var(--ts-s3);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ts-text2);
+  }
+
+  .vote-pill-lime {
+    background: rgba(204, 255, 69, 0.1);
+    color: var(--ts-lime);
+    border: 1px solid rgba(204, 255, 69, 0.2);
+  }
+
+  .vote-card-compat {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--ts-muted);
+    margin-bottom: 6px;
+  }
+
+  .vote-card-pct {
+    font-weight: 700;
+    color: #9B6DFF;
+    transition: color 0.25s;
+  }
+
+  .vote-card-bar {
+    height: 4px;
+    background: var(--ts-s3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .vote-card-bar-fill {
+    height: 100%;
+    background: #9B6DFF;
+    border-radius: 2px;
+    transition: background 0.25s;
+  }
+
+  @media (max-width: 480px) {
+    .join-emoji-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    .join-vibe-grid {
+      grid-template-columns: 1fr;
+    }
+    .join-budget-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyAP25d4aRUzCZ5SStxVxD_PJ0UWCQIChxo</string>
+	<key>GCM_SENDER_ID</key>
+	<string>301885884422</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.afialabs.tripsquad</string>
+	<key>PROJECT_ID</key>
+	<string>tripsquad-cd1aa</string>
+	<key>STORAGE_BUCKET</key>
+	<string>tripsquad-cd1aa.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:301885884422:ios:7b73da01cf1cc506271b87</string>
+</dict>
+</plist>

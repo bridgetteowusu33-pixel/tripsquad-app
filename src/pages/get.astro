@@ -1,0 +1,186 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// /get?t={token} → tries to deep-link into the app; if the app isn't
+// installed, shows a platform-aware fallback (TestFlight on iOS,
+// waitlist form otherwise). The token rides along so post-signin the
+// app lands on the right trip.
+---
+
+<BaseLayout title="Get TripSquad" description="Open TripSquad on your phone or download it to join your squad's trip.">
+
+<main class="landing">
+  <div class="container">
+    <section class="get-hero" id="get-hero">
+      <div class="get-logo">✈️</div>
+      <h1 class="get-title">opening TripSquad…</h1>
+      <p class="get-sub" id="get-sub">
+        if the app doesn't open in a second, grab it below.
+      </p>
+
+      <!-- Fallback: filled in by JS once we decide the user didn't
+           open the app. Defaults hidden. -->
+      <div id="get-fallback" class="get-fallback" style="display:none;">
+        <div class="get-card" id="get-card-ios" style="display:none;">
+          <div class="get-card-emoji">🍎</div>
+          <div class="get-card-body">
+            <p class="get-card-title">TripSquad is in private beta on iOS</p>
+            <p class="get-card-sub">join the TestFlight beta to get updates first</p>
+          </div>
+          <a id="get-ios-btn" href="#" class="get-btn">join beta →</a>
+        </div>
+
+        <div class="get-card" id="get-card-android" style="display:none;">
+          <div class="get-card-emoji">🤖</div>
+          <div class="get-card-body">
+            <p class="get-card-title">Android is on the way</p>
+            <p class="get-card-sub">join the waitlist — we'll DM you on launch day</p>
+          </div>
+          <a href="mailto:hi@gettripsquad.com?subject=Android%20waitlist"
+             class="get-btn">join waitlist</a>
+        </div>
+
+        <div class="get-card" id="get-card-desktop" style="display:none;">
+          <div class="get-card-emoji">📱</div>
+          <div class="get-card-body">
+            <p class="get-card-title">TripSquad is a phone app</p>
+            <p class="get-card-sub">open this link on your iPhone to install</p>
+          </div>
+          <a href="/"
+             class="get-btn get-btn-ghost">back to site →</a>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script is:inline>
+  (() => {
+    // Keep the trip token so the app can route to the right trip
+    // once the user signs in.
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('t') ?? '';
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) ||
+      (ua.includes('Mac') && 'ontouchend' in document);
+    const isAndroid = /Android/i.test(ua);
+
+    // Configure this once TestFlight public link is live. Until then
+    // the iOS card gently tells users beta isn't open yet. Also
+    // supports `&b=<url>` override for one-off invites.
+    const TESTFLIGHT_URL = params.get('b') ||
+      'https://testflight.apple.com/join/tYUGTc9X';
+
+    const fallback = document.getElementById('get-fallback');
+    const sub = document.getElementById('get-sub');
+
+    function showFallback() {
+      if (isIOS) {
+        document.getElementById('get-card-ios').style.display = '';
+        const btn = document.getElementById('get-ios-btn');
+        btn.href = TESTFLIGHT_URL;
+      } else if (isAndroid) {
+        document.getElementById('get-card-android').style.display = '';
+      } else {
+        document.getElementById('get-card-desktop').style.display = '';
+      }
+      fallback.style.display = '';
+      sub.textContent = '';
+    }
+
+    // 1. On iOS, try the app's custom URL scheme first. If the app is
+    //    installed, iOS intercepts and the page goes to background.
+    //    If nothing happens, we fall back after 1.5s.
+    if (isIOS) {
+      // Best-effort deep link. No token routing yet — the app will
+      // open on its normal start screen. Post-app-store launch we'll
+      // wire this through a universal link that carries the token.
+      const deepLink = token
+        ? `com.afialabs.tripsquad://trip/${encodeURIComponent(token)}`
+        : 'com.afialabs.tripsquad://open';
+      // Use a hidden iframe to avoid leaving a broken page if the
+      // scheme doesn't resolve (Safari refuses direct navigation).
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = deepLink;
+      document.body.appendChild(iframe);
+      // If the page is still visible 1.5s later, the app didn't open.
+      const t = setTimeout(() => {
+        if (!document.hidden) showFallback();
+      }, 1500);
+      // Cancel the fallback if the page gets hidden (app opened).
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) clearTimeout(t);
+      });
+    } else {
+      // Non-iOS: show fallback immediately.
+      showFallback();
+    }
+  })();
+</script>
+
+<style>
+  .get-hero {
+    padding: 80px 16px 60px;
+    text-align: center;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  .get-logo { font-size: 64px; margin-bottom: 20px; }
+  .get-title {
+    font-family: var(--font-heading);
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--ts-text);
+    margin-bottom: 10px;
+  }
+  .get-sub {
+    color: var(--ts-text2);
+    font-size: 15px;
+    margin-bottom: 28px;
+  }
+  .get-fallback { display: flex; flex-direction: column; gap: 12px; }
+  .get-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    background: var(--ts-s1);
+    border: 1px solid var(--ts-border);
+    border-radius: 18px;
+    text-align: left;
+  }
+  .get-card-emoji { font-size: 28px; flex-shrink: 0; }
+  .get-card-body { flex: 1; min-width: 0; }
+  .get-card-title {
+    font-family: var(--font-heading);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ts-text);
+    margin: 0 0 2px;
+  }
+  .get-card-sub {
+    font-size: 13px;
+    color: var(--ts-text2);
+    margin: 0;
+  }
+  .get-btn {
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: var(--ts-lime);
+    color: var(--ts-bg);
+    font-family: var(--font-heading);
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .get-btn-ghost {
+    background: transparent;
+    color: var(--ts-text2);
+    border: 1px solid var(--ts-border);
+  }
+</style>
+
+</BaseLayout>

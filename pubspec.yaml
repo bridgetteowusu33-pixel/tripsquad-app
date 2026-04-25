@@ -1,0 +1,138 @@
+name: tripsquad
+description: AI-powered group travel planner for squads.
+publish_to: 'none'
+version: 1.0.0+8
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ── Backend ──────────────────────────────────────────────
+  supabase_flutter: ^2.5.6
+
+  # ── Push notifications ───────────────────────────────────
+  firebase_core: ^3.6.0
+  firebase_messaging: ^15.1.3
+  flutter_local_notifications: ^17.2.3
+
+  # ── Native Sign in with Apple (App Store compliance) ─────
+  sign_in_with_apple: ^6.1.2
+  crypto: ^3.0.6
+
+  # ── Native Google Sign In (branded consent sheet) ────────
+  google_sign_in: ^6.2.1
+
+  # ── State management ─────────────────────────────────────
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # ── Navigation ───────────────────────────────────────────
+  go_router: ^14.2.7
+
+  # ── Monetisation ─────────────────────────────────────────
+  purchases_flutter: ^8.11.0
+
+  # ── Deep linking / Analytics / Maps (deferred) ────────────
+  # flutter_branch_sdk: ^7.0.0
+  # posthog_flutter: ^4.0.1
+  # sentry_flutter: ^8.6.0
+  # mapbox_maps_flutter: ^2.3.0
+
+  # ── Animation ────────────────────────────────────────────
+  flutter_animate: ^4.5.0
+
+  # ── Sharing ──────────────────────────────────────────────
+  share_plus: ^10.1.2
+  url_launcher: ^6.3.0
+  app_settings: ^5.1.1
+  package_info_plus: ^8.0.0
+
+  # ── Native calendar event add (iOS EventKit / Android Intent) ─
+  add_2_calendar: ^3.0.1
+
+  # ── Native "rate this app" prompt (Apple SKStoreReviewController) ─
+  in_app_review: ^2.0.10
+
+  # ── HTTP client (for downloading photos before sharing) ─
+  http: ^1.1.0
+
+  # ── Voice memos (record + playback) ──────────────────────
+  record: ^5.1.2
+  audioplayers: ^6.1.0
+
+  # ── Images ───────────────────────────────────────────────
+  cached_network_image: ^3.3.1
+  image_picker: ^1.1.2
+  image: ^4.3.0
+
+  # ── UI utilities ─────────────────────────────────────────
+  google_fonts: ^6.2.1
+  gap: ^3.0.1
+  shimmer: ^3.0.0
+  lottie: ^3.1.2
+  confetti: ^0.7.0
+  flutter_svg: ^2.0.10+1
+
+  # ── Storage ──────────────────────────────────────────────
+  shared_preferences: ^2.3.2
+  flutter_secure_storage: ^9.2.2
+  path_provider: ^2.1.4
+
+  # ── Utilities ────────────────────────────────────────────
+  intl: ^0.19.0
+  uuid: ^4.4.2
+  collection: ^1.18.0
+  equatable: ^2.0.5
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+dependency_overrides:
+  # record 5.1.2 pulls in record_linux 0.7.2 which lags behind
+  # record_platform_interface 1.5.0 — causing missing `startStream`
+  # and mismatched `hasPermission` signatures at kernel compile.
+  # We don't ship on Linux, but the Dart analyzer still compiles all
+  # platform impls, so force a compatible record_linux version.
+  record_linux: ^1.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.11
+  freezed: ^2.5.2
+  json_serializable: ^6.8.0
+  riverpod_generator: ^2.4.0
+  custom_lint: ^0.6.4
+  riverpod_lint: ^2.3.10
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+  fonts:
+    - family: Syne
+      fonts:
+        - asset: assets/fonts/Syne-Variable.ttf
+    - family: Clash Display
+      fonts:
+        - asset: assets/fonts/ClashDisplay-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/ClashDisplay-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/ClashDisplay-Semibold.ttf
+          weight: 600
+        - asset: assets/fonts/ClashDisplay-Bold.ttf
+          weight: 700
+    - family: Satoshi
+      fonts:
+        - asset: assets/fonts/Satoshi-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Satoshi-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Satoshi-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Satoshi-Black.ttf
+          weight: 900

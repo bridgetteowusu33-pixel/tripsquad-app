@@ -1,0 +1,86 @@
+---
+export interface Props {
+  title: string;
+  description?: string;
+  noindex?: boolean;
+}
+
+const { title, description, noindex } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {description && <meta name="description" content={description} />}
+  {noindex && <meta name="robots" content="noindex, nofollow" />}
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <slot name="head" />
+</head>
+<body>
+  <slot />
+</body>
+</html>
+
+<style is:global>
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  :root {
+    --ts-lime: #CCFF45;
+    --ts-coral: #FF4757;
+    --ts-blue: #3D8EFF;
+    --ts-purple: #9B6DFF;
+    --ts-gold: #FFB800;
+    --ts-teal: #00D4AA;
+
+    --ts-bg: #08080E;
+    --ts-s1: #0F0F1C;
+    --ts-s2: #171728;
+    --ts-s3: #1E1E32;
+
+    --ts-text: #F0EDF8;
+    --ts-text2: #C0BCDA;
+    --ts-muted: #6A6485;
+
+    --ts-border: rgba(255, 255, 255, 0.07);
+    --ts-border2: rgba(255, 255, 255, 0.12);
+
+    --font-heading: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--ts-bg);
+    color: var(--ts-text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  img {
+    max-width: 100%;
+    display: block;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+</style>

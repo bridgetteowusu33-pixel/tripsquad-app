@@ -84,7 +84,7 @@ final homeFocusProvider = Provider<AsyncValue<HomeFocus?>>((ref) {
           ));
         }
 
-        // Priority 1 — voting phase
+        // Priority 1 — voting phase (solo never reaches this)
         final voting = active.firstWhereOrNull(
           (t) => t.effectiveStatus == TripStatus.voting,
         );
@@ -98,7 +98,7 @@ final homeFocusProvider = Provider<AsyncValue<HomeFocus?>>((ref) {
           ));
         }
 
-        // Priority 2 — revealed (options chosen, plan not yet seen)
+        // Priority 2 — revealed (destination locked, plan not yet seen)
         final revealed = active.firstWhereOrNull(
           (t) => t.effectiveStatus == TripStatus.revealed,
         );
@@ -106,7 +106,11 @@ final homeFocusProvider = Provider<AsyncValue<HomeFocus?>>((ref) {
           final dest = revealed.selectedDestination ?? revealed.name;
           return AsyncValue.data(HomeFocus(
             prefix: g.text,
-            ask: 'everyone voted. $dest is in.',
+            // Solo skipped the squad-vote step — there's no "everyone
+            // voted" moment. Frame it as the trip being ready to plan.
+            ask: revealed.mode == TripMode.solo
+                ? '$dest is locked in. let\'s plan it.'
+                : 'everyone voted. $dest is in.',
             cta: 'open →',
             route: '/trip/${revealed.id}/space',
           ));

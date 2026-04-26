@@ -14,7 +14,7 @@ class TipsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dest = trip.selectedDestination;
-    final tips = _tipsFor(dest);
+    final tips = _tipsFor(dest, trip.mode);
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
       children: [
@@ -38,14 +38,17 @@ class _Tip {
   final String emoji, title, body;
 }
 
-List<_Tip> _tipsFor(String? destination) {
+List<_Tip> _tipsFor(String? destination, TripMode mode) {
   // Universal starter set. Destination-aware AI version is v1.1.
   final d = destination ?? 'your destination';
+  final isSolo = mode == TripMode.solo;
   return [
     _Tip('💰', 'budget',
         'book flights + accommodation 6 weeks ahead for best rates. $d prices peak in summer and around holidays.'),
     _Tip('🛂', 'visa + passport',
-        'check visa requirements for every passport in your squad. passport should have 6+ months validity. photocopy your passport and store it separately from the original.'),
+        isSolo
+            ? 'check visa requirements for $d. passport should have 6+ months validity. photocopy your passport and store it separately from the original.'
+            : 'check visa requirements for every passport in your squad. passport should have 6+ months validity. photocopy your passport and store it separately from the original.'),
     _Tip('📱', 'data + roaming',
         "grab an eSIM before you land — way cheaper than roaming. airalo, holafly, or ubigi work in most countries. download offline maps in google maps or maps.me."),
     _Tip('💳', 'money + cards',
@@ -58,6 +61,9 @@ List<_Tip> _tipsFor(String? destination) {
         'share your itinerary with someone back home. avoid flashing expensive tech in crowds. register with your country\'s embassy for overseas alerts.'),
     _Tip('🎒', 'pro tip',
         "leave space in your luggage for souvenirs. a 2-1-1 rule works for most trips: 2 pants · 1 jacket · 1 'dressy' outfit."),
+    if (isSolo)
+      _Tip('🧳', 'going solo',
+          "share your full itinerary + accommodation with one person back home. join a free walking tour day 1 — fastest way to meet other travelers. say yes to one social thing per day, even when you don't feel like it."),
   ];
 }
 

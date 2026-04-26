@@ -204,7 +204,7 @@ class _SquadTabState extends ConsumerState<SquadTab> {
                 _CoverPhotoRow(trip: widget.trip),
               ],
               const SizedBox(height: 24),
-              _DeleteTripRow(trip: widget.trip),
+              DeleteTripRow(trip: widget.trip),
             ],
           ],
         );
@@ -429,8 +429,12 @@ class _PhotosGalleryRow extends StatelessWidget {
 /// rows (RLS + CASCADE handle the cleanup). Sits at the very
 /// bottom of the Squad tab so it's reachable but not
 /// accidentally-tappable.
-class _DeleteTripRow extends ConsumerWidget {
-  const _DeleteTripRow({required this.trip});
+///
+/// v1.1 — public so it can be reused on the Status tab (collecting
+/// state, where the host might want to delete an unstarted trip
+/// without committing to generate options).
+class DeleteTripRow extends ConsumerWidget {
+  const DeleteTripRow({super.key, required this.trip});
   final Trip trip;
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
@@ -1872,9 +1876,9 @@ class _SoloSettingsBodyState extends ConsumerState<_SoloSettingsBody> {
 
         const SizedBox(height: 32),
 
-        // Danger zone — delete reuses the existing _DeleteTripRow
+        // Danger zone — delete reuses the existing DeleteTripRow
         // higher up in this file (works for any trip mode).
-        _DeleteTripRow(trip: widget.trip),
+        DeleteTripRow(trip: widget.trip),
       ],
     );
   }

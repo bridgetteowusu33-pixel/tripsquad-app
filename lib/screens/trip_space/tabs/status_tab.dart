@@ -6,6 +6,7 @@ import '../../../core/errors.dart';
 import '../../../core/haptics.dart';
 import '../../../core/theme.dart';
 import '../../../models/models.dart';
+import 'squad_tab.dart' show DeleteTripRow;
 import '../../../providers/providers.dart';
 import '../../../services/supabase_service.dart';
 import '../../../widgets/widgets.dart';
@@ -131,6 +132,11 @@ class _StatusTabState extends ConsumerState<StatusTab> {
                   member: m,
                   photoUrl: m.userId == null ? null : _avatarByUid[m.userId!],
                 ),
+              const SizedBox(height: 32),
+              // Host-only delete affordance. Lives on this tab so a host
+              // who started a group trip nobody answered can wind it
+              // down without committing to generate options.
+              if (isHost) DeleteTripRow(trip: widget.trip),
               const SizedBox(height: 24),
             ]),
           ),
@@ -141,14 +147,18 @@ class _StatusTabState extends ConsumerState<StatusTab> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: Column(children: [
-                  if (pending > 0)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Text(
-                        '$pending still filling — you can start now or wait',
-                        style: TSTextStyles.caption(color: TSColors.muted),
-                      ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text(
+                      submitted == 0
+                          ? "fill in your prefs first — tap your row above"
+                          : pending > 0
+                              ? '$pending still filling — you can start now or wait'
+                              : "everyone's in — ready when you are",
+                      style: TSTextStyles.caption(color: TSColors.muted),
+                      textAlign: TextAlign.center,
                     ),
+                  ),
                   TSButton(
                     label: _generating
                         ? 'generating…'

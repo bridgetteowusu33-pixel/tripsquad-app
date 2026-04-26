@@ -10,6 +10,7 @@ import '../../../core/constants.dart';
 import '../../../core/theme.dart';
 import '../../../core/errors.dart';
 import '../../../core/haptics.dart';
+import '../../../core/responsive.dart';
 import '../../../models/models.dart';
 import '../../../providers/providers.dart';
 import '../../../services/supabase_service.dart';

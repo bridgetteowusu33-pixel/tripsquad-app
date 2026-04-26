@@ -220,7 +220,10 @@ class TripCard extends ConsumerWidget {
                           duration: 900.ms,
                           curve: Curves.easeInOut),
                   const SizedBox(height: 8),
-                ] else if (total > 0) ...[
+                ] else if (total > 0 && trip.mode != TripMode.solo) ...[
+                  // The "X of Y responded" row only makes sense for
+                  // group trips. On a solo trip it's always "1 of 1"
+                  // which reads as filler — hide it.
                   Row(children: [
                     Text('$responded of $total',
                         style: TSTextStyles.caption(color: TSColors.text2)),

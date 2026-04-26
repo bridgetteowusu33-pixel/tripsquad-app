@@ -802,8 +802,29 @@ class _StepInviteState extends ConsumerState<_StepInvite> {
         await ent.consumeReservedPass(reservedPassId, trip.id);
         ref.invalidate(unspentTripPassesProvider);
       }
+
+      // v1.1 — solo trips skip voting entirely. Take the first
+      // destination the user listed and set it as the winner so
+      // the trip lands in 'revealed' state and the planning UI
+      // is immediately useful. setWinner is idempotent.
+      Trip finalTrip = trip;
+      if (state.mode == TripMode.solo && state.destinations.isNotEmpty) {
+        final pick = state.destinations.first;
+        final flag = TSQuickDestinations.flagFor(pick) ?? '✈️';
+        await ref.read(tripServiceProvider).setWinner(
+              tripId: trip.id,
+              destination: pick,
+              flag: flag,
+            );
+        finalTrip = trip.copyWith(
+          selectedDestination: pick,
+          selectedFlag: flag,
+          status: TripStatus.revealed,
+        );
+      }
+
       ref.invalidate(myTripsProvider);
-      if (mounted) setState(() { _trip = trip; _loading = false; });
+      if (mounted) setState(() { _trip = finalTrip; _loading = false; });
     } catch (e) {
       if (reservedPassId != null) {
         await ent.releaseReservedPass(reservedPassId);

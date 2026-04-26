@@ -35,7 +35,7 @@ const _slides = [
     emoji: '🧭',
     title: 'scout builds your',
     titleAccent: 'perfect trip',
-    body: "squad vibes, budgets, and preferences — scout blends them into tailored proposals ✨",
+    body: "with your squad — or solo. scout blends vibes, budgets, and preferences into tailored proposals ✨",
     glow: TSColors.purple,
   ),
   _Slide(

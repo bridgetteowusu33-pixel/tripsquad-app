@@ -214,6 +214,9 @@ class TripCreationState {
   final DateTime? endDate;
   final int? budgetPerPerson;
   final int currentStep;
+  // v1.1 — solo vs group. Defaults to group so existing flows are
+  // unchanged. Solo path skips the Invite step.
+  final TripMode mode;
 
   const TripCreationState({
     this.name = '',
@@ -223,6 +226,7 @@ class TripCreationState {
     this.endDate,
     this.budgetPerPerson,
     this.currentStep = 0,
+    this.mode = TripMode.group,
   });
 
   TripCreationState copyWith({
@@ -233,6 +237,7 @@ class TripCreationState {
     DateTime? endDate,
     int? budgetPerPerson,
     int? currentStep,
+    TripMode? mode,
   }) => TripCreationState(
     name:            name            ?? this.name,
     vibes:           vibes           ?? this.vibes,
@@ -241,6 +246,7 @@ class TripCreationState {
     endDate:         endDate         ?? this.endDate,
     budgetPerPerson: budgetPerPerson ?? this.budgetPerPerson,
     currentStep:     currentStep     ?? this.currentStep,
+    mode:            mode            ?? this.mode,
   );
 }
 
@@ -255,6 +261,7 @@ class TripCreation extends _$TripCreation {
   void setDates(DateTime? s, DateTime? e) =>
       state = state.copyWith(startDate: s, endDate: e);
   void setBudget(int? v)             => state = state.copyWith(budgetPerPerson: v);
+  void setMode(TripMode v)           => state = state.copyWith(mode: v);
   void nextStep() => state = state.copyWith(currentStep: state.currentStep + 1);
   void prevStep() => state = state.copyWith(currentStep: state.currentStep - 1);
   void reset()    => state = const TripCreationState();

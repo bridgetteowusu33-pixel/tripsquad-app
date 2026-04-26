@@ -50,9 +50,16 @@ class _TripCreationWizardState extends ConsumerState<TripCreationWizard> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(tripCreationProvider);
-    const steps = ['Name', 'Vibe', 'Destinations', 'Invite'];
-
-    final pages = const [
+    // v1.1 — solo trips still hit the final step (which is what
+    // actually persists the trip), but the step is labeled "Create"
+    // and skips the invite UI in favor of an immediate route to
+    // the trip space.
+    final isSolo = state.mode == TripMode.solo;
+    final steps = isSolo
+        ? const ['Mode', 'Name', 'Vibe', 'Destinations', 'Create']
+        : const ['Mode', 'Name', 'Vibe', 'Destinations', 'Invite'];
+    final pages = const <Widget>[
+      _StepMode(),
       _StepNameDates(),
       _StepVibe(),
       _StepDestinations(),
@@ -136,6 +143,121 @@ class _TripCreationWizardState extends ConsumerState<TripCreationWizard> {
             ),
           ),
         ])),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  STEP 0 — Mode (v1.1: solo or squad)
+// ─────────────────────────────────────────────────────────────
+//
+//  The first decision: is this a group trip or a solo trip?
+//  Defaults to group (matches existing behavior). Picking solo
+//  trims the Invite step from the wizard further down the flow.
+//
+class _StepMode extends ConsumerWidget {
+  const _StepMode();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(tripCreationProvider);
+    final notifier = ref.read(tripCreationProvider.notifier);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(TSSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: TSSpacing.md),
+          Text("who's coming?",
+              style: TSTextStyles.heading(size: 26)),
+          const SizedBox(height: 6),
+          Text('you can always add friends later.',
+              style: TSTextStyles.body(color: TSColors.muted, size: 14)),
+          const SizedBox(height: TSSpacing.lg),
+
+          _ModeCard(
+            title: 'with my squad',
+            subtitle: 'invite friends, vote on the destination, plan together.',
+            emoji: '👥',
+            accent: TSColors.lime,
+            selected: state.mode == TripMode.group,
+            onTap: () => notifier.setMode(TripMode.group),
+          ),
+          const SizedBox(height: TSSpacing.sm),
+          _ModeCard(
+            title: 'just me',
+            subtitle: "scout helps you plan. you can bring friends in any time.",
+            emoji: '🧳',
+            accent: TSColors.blue,
+            selected: state.mode == TripMode.solo,
+            onTap: () => notifier.setMode(TripMode.solo),
+          ),
+          const SizedBox(height: TSSpacing.xl),
+
+          TSButton(
+            label: 'next',
+            onTap: () => notifier.nextStep(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModeCard extends StatelessWidget {
+  const _ModeCard({
+    required this.title,
+    required this.subtitle,
+    required this.emoji,
+    required this.accent,
+    required this.selected,
+    required this.onTap,
+  });
+  final String title;
+  final String subtitle;
+  final String emoji;
+  final Color accent;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () { TSHaptics.selection(); onTap(); },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: selected ? accent.withOpacity(0.10) : TSColors.s2,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? accent : TSColors.border,
+            width: selected ? 1.5 : 1,
+          ),
+          boxShadow: selected
+              ? [BoxShadow(color: accent.withOpacity(0.18),
+                  blurRadius: 18, spreadRadius: -4)]
+              : null,
+        ),
+        child: Row(children: [
+          Text(emoji, style: const TextStyle(fontSize: 32)),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TSTextStyles.title(size: 15)),
+                const SizedBox(height: 2),
+                Text(subtitle,
+                    style: TSTextStyles.caption(color: TSColors.muted)),
+              ],
+            ),
+          ),
+          if (selected)
+            Icon(Icons.check_circle, color: accent, size: 22),
+        ]),
       ),
     );
   }
@@ -587,7 +709,9 @@ class _StepDestinationsState extends ConsumerState<_StepDestinations> {
           Expanded(
             flex: 2,
             child: TSButton(
-              label: 'next: invite squad →',
+              label: state.mode == TripMode.solo
+                  ? 'create trip ✈'
+                  : 'next: invite squad →',
               onTap: state.destinations.length < 3
                   ? null
                   : () => ref.read(tripCreationProvider.notifier).nextStep(),
@@ -664,7 +788,7 @@ class _StepInviteState extends ConsumerState<_StepInvite> {
       final state = ref.read(tripCreationProvider);
       final trip = await ref.read(tripServiceProvider).createTrip(
         name:           state.name,
-        mode:           TripMode.group,
+        mode:           state.mode,
         vibes:          state.vibes,
         startDate:      state.startDate,
         endDate:        state.endDate,
@@ -751,6 +875,17 @@ class _StepInviteState extends ConsumerState<_StepInvite> {
     }
     if (_error != null) {
       return Center(child: Text(_error!, style: TSTextStyles.body(color: TSColors.coral)));
+    }
+
+    // v1.1 — solo trips skip the invite UI entirely. Once the trip
+    // is created, jump straight into the trip space.
+    if (_trip != null && _trip!.mode == TripMode.solo) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.pushReplacement('/trip/${_trip!.id}/space');
+        }
+      });
+      return const Center(child: CircularProgressIndicator(color: TSColors.lime));
     }
 
     return SingleChildScrollView(

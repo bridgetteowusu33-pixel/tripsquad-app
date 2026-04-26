@@ -580,13 +580,23 @@ class _StepDestinationsState extends ConsumerState<_StepDestinations> {
       padding: const EdgeInsets.all(TSSpacing.lg),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const SizedBox(height: TSSpacing.sm),
-        Text("build your", style: TSTextStyles.heading(size: 26)),
-        Text("shortlist",
-          style: TSTextStyles.heading(size: 26, color: TSColors.lime)
-              .copyWith(fontStyle: FontStyle.italic)),
-        const SizedBox(height: 6),
-        Text('3–10 destinations. Your squad votes on these.',
-          style: TSTextStyles.body(color: TSColors.muted)),
+        if (state.mode == TripMode.solo) ...[
+          Text("where are you", style: TSTextStyles.heading(size: 26)),
+          Text("going?",
+            style: TSTextStyles.heading(size: 26, color: TSColors.lime)
+                .copyWith(fontStyle: FontStyle.italic)),
+          const SizedBox(height: 6),
+          Text('pick a destination. you can change it any time.',
+            style: TSTextStyles.body(color: TSColors.muted)),
+        ] else ...[
+          Text("build your", style: TSTextStyles.heading(size: 26)),
+          Text("shortlist",
+            style: TSTextStyles.heading(size: 26, color: TSColors.lime)
+                .copyWith(fontStyle: FontStyle.italic)),
+          const SizedBox(height: 6),
+          Text('3–10 destinations. Your squad votes on these.',
+            style: TSTextStyles.body(color: TSColors.muted)),
+        ],
 
         const SizedBox(height: 20),
 
@@ -712,7 +722,11 @@ class _StepDestinationsState extends ConsumerState<_StepDestinations> {
               label: state.mode == TripMode.solo
                   ? 'create trip ✈'
                   : 'next: invite squad →',
-              onTap: state.destinations.length < 3
+              // Solo trips just need ONE destination (the one
+              // they're going to). Group trips still need a 3-deep
+              // shortlist so the squad has real options to vote on.
+              onTap: state.destinations.length <
+                      (state.mode == TripMode.solo ? 1 : 3)
                   ? null
                   : () => ref.read(tripCreationProvider.notifier).nextStep(),
             ),

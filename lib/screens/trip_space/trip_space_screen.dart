@@ -202,7 +202,7 @@ class _TripSpaceInnerState extends ConsumerState<_TripSpaceInner>
         .where((t) => t.key != 'vote')
         .map((t) {
           if (t.key == 'chat') return const _TabDef('scout', 'scout');
-          if (t.key == 'squad') return const _TabDef('squad', 'settings');
+          if (t.key == 'squad') return const _TabDef('squad', 'more');
           return t;
         })
         .toList();

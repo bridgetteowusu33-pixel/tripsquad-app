@@ -553,6 +553,14 @@ class _StepDestinationsState extends ConsumerState<_StepDestinations> {
 
   void _add(String dest) {
     if (dest.trim().isEmpty) return;
+    final mode = ref.read(tripCreationProvider).mode;
+    if (mode == TripMode.solo) {
+      // Solo trips are single-destination: each pick REPLACES
+      // the previous one. No shortlist accumulates.
+      ref.read(tripCreationProvider.notifier).setDestinations([dest]);
+      _ctrl.clear();
+      return;
+    }
     final dests = List<String>.from(
         ref.read(tripCreationProvider).destinations);
     if (!dests.contains(dest) && dests.length < 10) {
@@ -568,6 +576,23 @@ class _StepDestinationsState extends ConsumerState<_StepDestinations> {
     dests.remove(dest);
     ref.read(tripCreationProvider.notifier).setDestinations(dests);
   }
+
+  // v1.1 — country chips only shown on solo trips. Surfaces the
+  // "you can do a whole country, not just a city" affordance
+  // without adding noise for group flows (where the user is
+  // building a city-level shortlist for voting).
+  static const _soloCountries = [
+    ('🇯🇵', 'Japan'),
+    ('🇮🇹', 'Italy'),
+    ('🇵🇹', 'Portugal'),
+    ('🇲🇦', 'Morocco'),
+    ('🇲🇽', 'Mexico'),
+    ('🇹🇭', 'Thailand'),
+    ('🇮🇸', 'Iceland'),
+    ('🇿🇦', 'South Africa'),
+    ('🇬🇷', 'Greece'),
+    ('🇨🇴', 'Colombia'),
+  ];
 
   @override
   void dispose() { _ctrl.dispose(); super.dispose(); }
@@ -599,6 +624,47 @@ class _StepDestinationsState extends ConsumerState<_StepDestinations> {
         ],
 
         const SizedBox(height: 20),
+
+        // v1.1 — solo trips also get a country chip row above the
+        // cities so "do the whole country" is a one-tap option.
+        if (state.mode == TripMode.solo) ...[
+          const SectionLabel(label: 'Whole country'),
+          Wrap(spacing: 8, runSpacing: 8,
+            children: _soloCountries.map((c) {
+              final label = '${c.$1} ${c.$2}';
+              final selected = state.destinations.contains(label);
+              return GestureDetector(
+                onTap: () => _add(label),
+                child: AnimatedContainer(
+                  duration: 150.ms,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? TSColors.limeDim(0.12)
+                        : TSColors.s2,
+                    borderRadius: TSRadius.full,
+                    border: Border.all(
+                      color: selected
+                          ? TSColors.limeDim(0.35)
+                          : TSColors.border,
+                    ),
+                  ),
+                  child: Text(label,
+                    style: TSTextStyles.body(
+                      size: 12,
+                      color: selected ? TSColors.lime : TSColors.text2,
+                      weight: selected
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+        ],
 
         // Quick add chips — smart: if the trip name matches a country
         // or region, surface cities in that place; otherwise fall back
@@ -649,9 +715,13 @@ class _StepDestinationsState extends ConsumerState<_StepDestinations> {
         // Selected list
         if (state.destinations.isNotEmpty) ...[
           SectionLabel(
-            label: 'Shortlist',
-            action: () {},
-            actionLabel: '${state.destinations.length}/10',
+            label: state.mode == TripMode.solo
+                ? 'Picked'
+                : 'Shortlist',
+            action: state.mode == TripMode.solo ? null : () {},
+            actionLabel: state.mode == TripMode.solo
+                ? null
+                : '${state.destinations.length}/10',
           ),
           ...state.destinations.asMap().entries.map((e) => Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -664,11 +734,15 @@ class _StepDestinationsState extends ConsumerState<_StepDestinations> {
                 border: Border.all(color: TSColors.limeDim(0.25)),
               ),
               child: Row(children: [
-                Text(
-                  '${e.key + 1}',
-                  style: TSTextStyles.label(color: TSColors.lime, size: 11),
-                ),
-                const SizedBox(width: 10),
+                // Solo trips don't render a position number — there's
+                // only ever one pick, so "1" is filler.
+                if (state.mode != TripMode.solo) ...[
+                  Text(
+                    '${e.key + 1}',
+                    style: TSTextStyles.label(color: TSColors.lime, size: 11),
+                  ),
+                  const SizedBox(width: 10),
+                ],
                 Expanded(child: Text(e.value,
                   style: TSTextStyles.body(size: 13, weight: FontWeight.w500))),
                 GestureDetector(

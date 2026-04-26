@@ -425,7 +425,12 @@ class _ScoutTabScreenState extends ConsumerState<ScoutTabScreen>
               ),
               error: (e, _) => Center(child: Text(humanizeError(e))),
               data: (rawMsgs) {
-                if (rawMsgs.isEmpty) return _EmptyScout(onPrompt: _send);
+                if (rawMsgs.isEmpty) {
+                  return _EmptyScout(
+                    onPrompt: _send,
+                    tripId: widget.tripId,
+                  );
+                }
                 final q = _search.toLowerCase();
                 final msgs = (!_searchOpen || q.isEmpty)
                     ? rawMsgs
@@ -599,12 +604,17 @@ class _ScoutTabScreenState extends ConsumerState<ScoutTabScreen>
 }
 
 class _EmptyScout extends ConsumerWidget {
-  const _EmptyScout({required this.onPrompt});
+  const _EmptyScout({required this.onPrompt, this.tripId});
   final void Function(String) onPrompt;
+  /// When set, the greeting reflects this specific trip's state
+  /// rather than the user's global trip portfolio. v1.1.
+  final String? tripId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final greeting = ref.watch(scoutGreetingProvider) ??
+    final greeting = (tripId != null
+            ? ref.watch(scoutTripGreetingProvider(tripId!))
+            : ref.watch(scoutGreetingProvider)) ??
         'what do you want to know?';
     final daily = scoutDailyQuestion();
 

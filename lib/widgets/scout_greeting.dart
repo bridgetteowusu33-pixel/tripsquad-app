@@ -13,6 +13,11 @@ import '../providers/providers.dart';
 /// - After long absence (>90 days) → re-engagement
 ///
 /// Returns a ready-to-render string. Null while loading.
+///
+/// v1.1 — when called from inside a specific trip's Scout tab,
+/// the calling widget should use [scoutTripGreetingProvider(tripId)]
+/// so the greeting reflects THIS trip rather than whichever trip
+/// happens to be live across the user's account.
 final scoutGreetingProvider = Provider<String?>((ref) {
   final profile = ref.watch(currentProfileProvider).valueOrNull;
   final trips = ref.watch(myTripsProvider).valueOrNull;
@@ -137,3 +142,29 @@ extension<T> on Iterable<T> {
     return null;
   }
 }
+
+/// v1.1 — trip-scoped Scout greeting. Used by the in-trip Scout
+/// tab so the greeting reflects THIS trip's state, not whichever
+/// trip is live across the user's account.
+final scoutTripGreetingProvider =
+    Provider.family<String?, String>((ref, tripId) {
+  final trips = ref.watch(myTripsProvider).valueOrNull;
+  if (trips == null) return null;
+  final trip = trips.firstWhereOrNull((t) => t.id == tripId);
+  if (trip == null) return null;
+  final dest = trip.selectedDestination ?? trip.name;
+  switch (trip.effectiveStatus) {
+    case TripStatus.live:
+      return "good morning. day in $dest. ask me anything for today.";
+    case TripStatus.revealed:
+    case TripStatus.planning:
+      return '$dest is locked in. ask me anything about it.';
+    case TripStatus.voting:
+      return "voting's open on $dest. want a hot take?";
+    case TripStatus.completed:
+      return "$dest wrapped. anything you want to remember?";
+    case TripStatus.collecting:
+    case TripStatus.draft:
+      return "tell me what kind of trip you want and i'll help shape it.";
+  }
+});

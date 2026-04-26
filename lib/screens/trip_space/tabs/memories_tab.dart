@@ -66,7 +66,9 @@ class _MemoriesTabState extends ConsumerState<MemoriesTab> {
           child: Text(
             widget.stampMode
                 ? '$flag $dest — earned'
-                : 'share the squad\'s win',
+                : trip.mode == TripMode.solo
+                    ? 'share the trip you made happen'
+                    : 'share the squad\'s win',
             style: TSTextStyles.caption(color: TSColors.muted),
           ),
         ),
@@ -121,15 +123,19 @@ class _MemoriesTabState extends ConsumerState<MemoriesTab> {
             RecapSheet.show(context, trip);
           },
         ),
-        const SizedBox(height: 10),
-        TSButton(
-          label: '🏆 give your squad kudos',
-          variant: TSButtonVariant.ghost,
-          onTap: () {
-            TSHaptics.ctaTap();
-            KudosSheet.show(context, trip);
-          },
-        ),
+        // Kudos doesn't apply on a solo trip — there's no one else
+        // in the squad to send them to.
+        if (trip.mode != TripMode.solo) ...[
+          const SizedBox(height: 10),
+          TSButton(
+            label: '🏆 give your squad kudos',
+            variant: TSButtonVariant.ghost,
+            onTap: () {
+              TSHaptics.ctaTap();
+              KudosSheet.show(context, trip);
+            },
+          ),
+        ],
       ],
     );
   }

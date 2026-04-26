@@ -26,6 +26,7 @@ import 'tabs/squad_tab.dart';
 import 'tabs/today_tab.dart';
 import 'tabs/memories_tab.dart';
 import 'tabs/stamp_tab.dart';
+import '../scout/scout_tab_screen.dart';
 
 /// Phase-aware container for a trip. The tab set changes as
 /// `trip.status` changes — streamed from Supabase so every
@@ -184,7 +185,26 @@ class _TripSpaceInnerState extends ConsumerState<_TripSpaceInner>
     context.push('/trip/$id/reveal');
   }
 
-  List<_TabDef> _tabsForStatus(TripStatus s) {
+  List<_TabDef> _tabsFor(TripStatus s, TripMode m) {
+    final raw = _baseTabsForStatus(s);
+    if (m != TripMode.solo) return raw;
+    // Solo filtering:
+    //  - Drop the Squad tab (you're the only one — nothing to see).
+    //  - Drop the Vote tab (replaced by destination picking inside
+    //    the trip space; for now just hide it — Scout's Picks lands
+    //    in a follow-up slice).
+    //  - Rename the Chat tab to Scout, and re-key it to 'scout' so
+    //    the route renders the trip-scoped Scout chat instead of the
+    //    group chat.
+    return raw
+        .where((t) => t.key != 'squad' && t.key != 'vote')
+        .map((t) => t.key == 'chat'
+            ? const _TabDef('scout', 'scout')
+            : t)
+        .toList();
+  }
+
+  List<_TabDef> _baseTabsForStatus(TripStatus s) {
     switch (s) {
       case TripStatus.collecting:
         return const [
@@ -238,7 +258,7 @@ class _TripSpaceInnerState extends ConsumerState<_TripSpaceInner>
     if (_lastStatus == status && _tabs != null) return;
     final previous = _lastStatus;
     _tabs?.dispose();
-    final tabDefs = _tabsForStatus(status);
+    final tabDefs = _tabsFor(status, widget.trip.mode);
     // Honour preferredTab on the FIRST controller build only. Once
     // the user is inside the screen they shouldn't be snapped around
     // by re-routes.
@@ -295,7 +315,7 @@ class _TripSpaceInnerState extends ConsumerState<_TripSpaceInner>
     // boundaries — no manual status bump needed.
     final phase = widget.trip.effectiveStatus;
     _rebuildControllerIfNeeded(phase);
-    final tabDefs = _tabsForStatus(phase);
+    final tabDefs = _tabsFor(phase, widget.trip.mode);
 
     // Re-watch auth state so host-only affordances (rename pencil,
     // date editor) recompute when a user signs in/out mid-screen.
@@ -381,6 +401,10 @@ class _TripSpaceInnerState extends ConsumerState<_TripSpaceInner>
       // they'll be able to share when they get back.
       case 'recap':    return MemoriesTab(trip: trip);
       case 'chat':     return ChatTab(tripId: trip.id);
+      // Solo-trip in-line Scout. Reuses the global Scout chat for now;
+      // a follow-up slice will scope it to this trip via
+      // scout_messages.trip_id.
+      case 'scout':    return const ScoutTabScreen();
       default:         return const SizedBox();
     }
   }

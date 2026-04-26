@@ -1636,7 +1636,7 @@ class _ItineraryNotesStreamProviderElement
   String get itemId => (origin as ItineraryNotesStreamProvider).itemId;
 }
 
-String _$tripCreationHash() => r'bdfe9343e9dde95de4431c21c0a85ff32704a548';
+String _$tripCreationHash() => r'4c89df0020c12e584e335e8e05ff6c3328b20ee7';
 
 /// See also [TripCreation].
 @ProviderFor(TripCreation)
@@ -1651,7 +1651,7 @@ final tripCreationProvider =
 );
 
 typedef _$TripCreation = AutoDisposeNotifier<TripCreationState>;
-String _$aIGenerationHash() => r'28cee490df237849a91f60cf46a0e7792452a330';
+String _$aIGenerationHash() => r'9aabfc6beb1f9c2d2654a9e8f8705f71b1635151';
 
 /// See also [AIGeneration].
 @ProviderFor(AIGeneration)

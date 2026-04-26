@@ -118,6 +118,13 @@ class _PlanTabState extends ConsumerState<PlanTab> {
               const SizedBox(height: 10),
               _PendingBanner(count: pendingCount, isHost: isHost),
             ],
+            // v1.1 — solo trips show a "bring friends in" affordance
+            // here. One-way conversion to group; preserves all the
+            // planning the user has already done solo.
+            if (widget.trip.mode == TripMode.solo) ...[
+              const SizedBox(height: 10),
+              _BringFriendsInCard(trip: widget.trip),
+            ],
             const SizedBox(height: 10),
             _AskScoutRow(trip: widget.trip),
             const SizedBox(height: 12),
@@ -167,6 +174,126 @@ class _PlanTabState extends ConsumerState<PlanTab> {
           ],
         );
       },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  _BringFriendsInCard  — Solo→Group conversion entry point
+// ─────────────────────────────────────────────────────────────
+//
+//  v1.1. Lives only on solo trips' plan tab. Tapping it confirms
+//  with the user (the conversion is one-way), flips trip.mode to
+//  group via TripService.convertToGroup, then routes to the
+//  existing /trip/<id>/invite flow so they can grab the squad
+//  invite link.
+//
+//  Everything the user has done solo (itinerary, destination,
+//  packing, photos) is preserved.
+//
+class _BringFriendsInCard extends ConsumerStatefulWidget {
+  const _BringFriendsInCard({required this.trip});
+  final Trip trip;
+
+  @override
+  ConsumerState<_BringFriendsInCard> createState() =>
+      _BringFriendsInCardState();
+}
+
+class _BringFriendsInCardState
+    extends ConsumerState<_BringFriendsInCard> {
+  bool _converting = false;
+
+  Future<void> _convert() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: TSColors.s2,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        title: Text('bring friends in?',
+            style: TSTextStyles.heading(size: 18)),
+        content: Text(
+          "this turns the trip into a squad trip. you'll get an "
+          "invite link to share. everything you've planned so far "
+          "stays. you can't switch back to solo after this.",
+          style: TSTextStyles.body(color: TSColors.text2, size: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('not yet',
+                style: TSTextStyles.label(color: TSColors.muted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('yes, share invite',
+                style: TSTextStyles.label(color: TSColors.lime)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _converting = true);
+    try {
+      await ref.read(tripServiceProvider).convertToGroup(widget.trip.id);
+      ref.invalidate(myTripsProvider);
+      TSHaptics.success();
+      if (!mounted) return;
+      context.push('/trip/${widget.trip.id}/invite');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        backgroundColor: TSColors.coral,
+        behavior: SnackBarBehavior.floating,
+        content: Text('couldn\'t convert — try again',
+            style: TSTextStyles.body(color: TSColors.bg, size: 13)),
+      ));
+    } finally {
+      if (mounted) setState(() => _converting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _converting ? null : _convert,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: TSColors.limeDim(0.06),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: TSColors.limeDim(0.25)),
+        ),
+        child: Row(children: [
+          const Text('👥', style: TextStyle(fontSize: 24)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('bring friends in',
+                    style: TSTextStyles.title(size: 14)),
+                const SizedBox(height: 2),
+                Text(
+                  "turn this into a squad trip — keep everything you've planned.",
+                  style: TSTextStyles.caption(color: TSColors.muted),
+                ),
+              ],
+            ),
+          ),
+          if (_converting)
+            const SizedBox(
+              width: 18, height: 18,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: TSColors.lime),
+            )
+          else
+            const Icon(Icons.chevron_right,
+                color: TSColors.muted, size: 20),
+        ]),
+      ),
     );
   }
 }

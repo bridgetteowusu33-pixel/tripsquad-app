@@ -558,6 +558,40 @@ class TripService {
     }).eq('id', tripId);
   }
 
+  /// Convert a solo trip into a group trip. One-way: a group trip
+  /// can't go back to solo (the moment squadmates are added, "their
+  /// preferences" is part of the trip's identity).
+  ///
+  /// All existing data is preserved — itinerary, dates, destination,
+  /// packing, photos. The host effectively keeps planning, and now
+  /// invited squadmates can join.
+  ///
+  /// Defensive: if invite_token is null on an old solo trip, we
+  /// regenerate it here so the share-invite flow has something to
+  /// hand out.
+  Future<Trip> convertToGroup(String tripId) async {
+    final existing = await _db
+        .from('trips')
+        .select('invite_token')
+        .eq('id', tripId)
+        .single();
+    final hasToken =
+        existing['invite_token'] != null &&
+        (existing['invite_token'] as String).isNotEmpty;
+    final updates = {
+      'mode':       TripMode.group.name,
+      'updated_at': DateTime.now().toIso8601String(),
+      if (!hasToken) 'invite_token': _generateToken(),
+    };
+    final row = await _db
+        .from('trips')
+        .update(updates)
+        .eq('id', tripId)
+        .select()
+        .single();
+    return Trip.fromJson(row);
+  }
+
   /// Host-only. Swap the trip's destination after voting / reveal.
   /// Clears the current itinerary so the host can regenerate fresh.
   /// Packing + squad + chat all stay intact.

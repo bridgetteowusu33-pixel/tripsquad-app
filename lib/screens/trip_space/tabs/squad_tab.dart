@@ -1616,16 +1616,35 @@ class _SoloSettingsBodyState extends ConsumerState<_SoloSettingsBody> {
   }
 
   Future<void> _addByTag(Map<String, dynamic> user) async {
+    final userId = user['id'] as String;
+    final myUid = Supabase.instance.client.auth.currentUser?.id;
+
+    // Guardrails BEFORE flipping mode. We don't want to half-convert
+    // the trip to group when the add itself is going to fail.
+    if (userId == myUid) {
+      _toast("that's you — can't add yourself", isError: true);
+      return;
+    }
+    final already = await Supabase.instance.client
+        .from('squad_members')
+        .select('id')
+        .eq('trip_id', widget.trip.id)
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (already != null) {
+      _toast('@${user['tag']} is already in this trip', isError: true);
+      return;
+    }
+
     setState(() => _adding = true);
     try {
-      // Solo trips have to flip to group mode first — otherwise the
-      // settings tab keeps rendering the solo body and the new
-      // squadmate is invisible. convertToGroup is idempotent if
-      // mode is already group.
+      // Mode flip + member insert. Order matters: convert first so
+      // the squad_member insert lands on a group trip, not a solo
+      // trip's hidden squad list.
       await ref.read(tripServiceProvider).convertToGroup(widget.trip.id);
       await ref.read(tripServiceProvider).addMemberByTag(
             tripId: widget.trip.id,
-            userId: user['id'] as String,
+            userId: userId,
             nickname: (user['nickname'] ?? user['tag']) as String,
             emoji: (user['emoji'] as String?) ?? '😎',
           );
@@ -1635,23 +1654,23 @@ class _SoloSettingsBodyState extends ConsumerState<_SoloSettingsBody> {
       if (!mounted) return;
       _tagCtrl.clear();
       setState(() => _tagResults = []);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        backgroundColor: TSColors.lime,
-        behavior: SnackBarBehavior.floating,
-        content: Text('@${user['tag']} added — trip is now a squad trip ✈',
-            style: TSTextStyles.body(color: TSColors.bg, size: 13)),
-      ));
+      _toast('@${user['tag']} added — trip is now a squad trip ✈');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        backgroundColor: TSColors.coral,
-        behavior: SnackBarBehavior.floating,
-        content: Text(humanizeError(e),
-            style: TSTextStyles.body(color: TSColors.bg, size: 13)),
-      ));
+      _toast(humanizeError(e), isError: true);
     } finally {
       if (mounted) setState(() => _adding = false);
     }
+  }
+
+  void _toast(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      backgroundColor: isError ? TSColors.coral : TSColors.lime,
+      behavior: SnackBarBehavior.floating,
+      content: Text(message,
+          style: TSTextStyles.body(color: TSColors.bg, size: 13)),
+    ));
   }
 
   Future<void> _convert() async {

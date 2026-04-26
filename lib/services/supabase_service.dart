@@ -334,7 +334,21 @@ class TripService {
         .from('squad_members')
         .stream(primaryKey: ['id'])
         .eq('trip_id', tripId)
-        .map((rows) => rows.map((e) => SquadMember.fromJson(snakeToCamel(e))).toList());
+        .map((rows) {
+          // Defensive dedupe by row id. Supabase realtime can briefly
+          // emit the same row twice during fast successive writes
+          // (e.g. solo→group conversion + addMemberByTag back-to-back).
+          final seen = <String>{};
+          final unique = <Map<String, dynamic>>[];
+          for (final r in rows) {
+            final id = r['id'] as String?;
+            if (id == null) continue;
+            if (seen.add(id)) unique.add(r);
+          }
+          return unique
+              .map((e) => SquadMember.fromJson(snakeToCamel(e)))
+              .toList();
+        });
   }
 
   // ── Add destinations to shortlist ────────────────────────

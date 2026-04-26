@@ -1585,6 +1585,74 @@ class _SoloSettingsBody extends ConsumerStatefulWidget {
 
 class _SoloSettingsBodyState extends ConsumerState<_SoloSettingsBody> {
   bool _converting = false;
+  final _tagCtrl = TextEditingController();
+  List<Map<String, dynamic>> _tagResults = [];
+  bool _searching = false;
+  bool _adding = false;
+
+  @override
+  void dispose() {
+    _tagCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _searchTag(String q) async {
+    if (q.trim().length < 2) {
+      setState(() => _tagResults = []);
+      return;
+    }
+    setState(() => _searching = true);
+    try {
+      final results = await ref.read(tripServiceProvider).searchByTag(q);
+      if (mounted) {
+        setState(() {
+          _tagResults = results;
+          _searching = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _searching = false);
+    }
+  }
+
+  Future<void> _addByTag(Map<String, dynamic> user) async {
+    setState(() => _adding = true);
+    try {
+      // Solo trips have to flip to group mode first — otherwise the
+      // settings tab keeps rendering the solo body and the new
+      // squadmate is invisible. convertToGroup is idempotent if
+      // mode is already group.
+      await ref.read(tripServiceProvider).convertToGroup(widget.trip.id);
+      await ref.read(tripServiceProvider).addMemberByTag(
+            tripId: widget.trip.id,
+            userId: user['id'] as String,
+            nickname: (user['nickname'] ?? user['tag']) as String,
+            emoji: (user['emoji'] as String?) ?? '😎',
+          );
+      ref.invalidate(myTripsProvider);
+      ref.invalidate(squadStreamProvider(widget.trip.id));
+      TSHaptics.success();
+      if (!mounted) return;
+      _tagCtrl.clear();
+      setState(() => _tagResults = []);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        backgroundColor: TSColors.lime,
+        behavior: SnackBarBehavior.floating,
+        content: Text('@${user['tag']} added — trip is now a squad trip ✈',
+            style: TSTextStyles.body(color: TSColors.bg, size: 13)),
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        backgroundColor: TSColors.coral,
+        behavior: SnackBarBehavior.floating,
+        content: Text(humanizeError(e),
+            style: TSTextStyles.body(color: TSColors.bg, size: 13)),
+      ));
+    } finally {
+      if (mounted) setState(() => _adding = false);
+    }
+  }
 
   Future<void> _convert() async {
     final confirmed = await showDialog<bool>(
@@ -1697,6 +1765,91 @@ class _SoloSettingsBodyState extends ConsumerState<_SoloSettingsBody> {
             ]),
           ),
         ),
+
+        const SizedBox(height: 18),
+
+        // Or — add by @tag inline. Skips the link-share ceremony
+        // for users who already know who they want to invite.
+        Text('or add by @tag',
+            style: TSTextStyles.label(color: TSColors.muted, size: 11)),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: TSColors.s2,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: TSColors.border),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(children: [
+            Text('@',
+                style: TSTextStyles.body(color: TSColors.muted, size: 16)),
+            const SizedBox(width: 4),
+            Expanded(
+              child: TextField(
+                controller: _tagCtrl,
+                onChanged: _searchTag,
+                style: TSTextStyles.body(color: TSColors.text, size: 14),
+                decoration: InputDecoration(
+                  hintText: 'their tripsquad tag',
+                  hintStyle: TSTextStyles.body(
+                      color: TSColors.muted, size: 14),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+            if (_searching)
+              const SizedBox(
+                width: 16, height: 16,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: TSColors.lime),
+              ),
+          ]),
+        ),
+        if (_tagResults.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          ..._tagResults.map((user) => Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: GestureDetector(
+                  onTap: _adding ? null : () => _addByTag(user),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: TSColors.s2,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: TSColors.border),
+                    ),
+                    child: Row(children: [
+                      Text(user['emoji'] as String? ?? '😎',
+                          style: const TextStyle(fontSize: 22)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('@${user['tag']}',
+                                style: TSTextStyles.title(size: 13)),
+                            if ((user['nickname'] as String?)?.isNotEmpty ?? false)
+                              Text(user['nickname'] as String,
+                                  style: TSTextStyles.caption(
+                                      color: TSColors.muted)),
+                          ],
+                        ),
+                      ),
+                      if (_adding)
+                        const SizedBox(
+                            width: 16, height: 16,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: TSColors.lime))
+                      else
+                        Icon(Icons.add_circle_outline,
+                            color: TSColors.lime, size: 20),
+                    ]),
+                  ),
+                ),
+              )),
+        ],
 
         const SizedBox(height: 32),
 

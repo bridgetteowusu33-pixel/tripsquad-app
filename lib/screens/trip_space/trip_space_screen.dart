@@ -493,7 +493,11 @@ class _VibeStrip extends ConsumerWidget {
       data: (members) => members.length,
       orElse: () => 0,
     );
-    final countText = squadCount <= 0
+    // v1.1 — solo trips don't show a squadmate count. The whole
+    // concept of "squadmates" only makes sense once there's a
+    // group; on a solo trip it'd render "1 squadmate" (you)
+    // which is filler at best, confusing at worst.
+    final countText = (trip.mode == TripMode.solo || squadCount <= 0)
         ? null
         : squadCount == 1
             ? '1 squadmate'

@@ -409,10 +409,11 @@ class _TripSpaceInnerState extends ConsumerState<_TripSpaceInner>
       // they'll be able to share when they get back.
       case 'recap':    return MemoriesTab(trip: trip);
       case 'chat':     return ChatTab(tripId: trip.id);
-      // Solo-trip in-line Scout. Reuses the global Scout chat for now;
-      // a follow-up slice will scope it to this trip via
-      // scout_messages.trip_id.
-      case 'scout':    return const ScoutTabScreen();
+      // Solo-trip in-space Scout. Trip-scoped — messages live in
+      // scout_messages with this trip_id, so each solo trip has
+      // its own private Scout history that never bleeds into the
+      // global Scout tab or other trips.
+      case 'scout':    return ScoutTabScreen(tripId: trip.id);
       default:         return const SizedBox();
     }
   }

@@ -110,6 +110,15 @@ Stream<List<ScoutMessage>> scoutHistory(ScoutHistoryRef ref) {
   return ref.read(scoutServiceProvider).watchHistory();
 }
 
+/// Trip-scoped Scout chat — only messages tagged with this trip_id.
+/// Used by the in-trip Scout tab on solo trips. v1.1.
+@riverpod
+Stream<List<ScoutMessage>> scoutTripHistory(
+    ScoutTripHistoryRef ref, String tripId) {
+  ref.watch(authStateProvider);
+  return ref.read(scoutServiceProvider).watchTripHistory(tripId);
+}
+
 /// Consecutive-day streak of Scout engagement. Counts back from today
 /// (or yesterday if today has no user message yet) — the streak is the
 /// longest unbroken run of days on which the user sent ≥1 message to

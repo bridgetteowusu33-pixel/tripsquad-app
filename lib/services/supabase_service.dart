@@ -1204,6 +1204,8 @@ class ScoutService {
   ScoutService(this._db);
   final SupabaseClient _db;
 
+  /// Global Scout chat — only messages NOT scoped to a specific trip
+  /// (trip_id IS NULL). Used by the bottom-nav Scout tab.
   Stream<List<ScoutMessage>> watchHistory() {
     final uid = _db.auth.currentUser?.id;
     if (uid == null) return Stream.value(<ScoutMessage>[]);
@@ -1213,8 +1215,34 @@ class ScoutService {
         .eq('user_id', uid)
         .order('created_at', ascending: true)
         .limit(200)
-        .map((rows) =>
-            rows.map((r) => ScoutMessage.fromJson(snakeToCamel(r))).toList());
+        .map((rows) {
+          // Client-side filter: realtime doesn't support .is_(trip_id, null)
+          // in the .stream() builder, so we drop trip-scoped rows here.
+          return rows
+              .where((r) => r['trip_id'] == null)
+              .map((r) => ScoutMessage.fromJson(snakeToCamel(r)))
+              .toList();
+        });
+  }
+
+  /// Trip-scoped Scout chat — messages tagged with this trip_id.
+  /// Used by the in-trip Scout tab on solo trips (and any future
+  /// per-trip Scout surfaces). v1.1.
+  Stream<List<ScoutMessage>> watchTripHistory(String tripId) {
+    final uid = _db.auth.currentUser?.id;
+    if (uid == null) return Stream.value(<ScoutMessage>[]);
+    return _db
+        .from('scout_messages')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', uid)
+        .order('created_at', ascending: true)
+        .limit(200)
+        .map((rows) {
+          return rows
+              .where((r) => r['trip_id'] == tripId)
+              .map((r) => ScoutMessage.fromJson(snakeToCamel(r)))
+              .toList();
+        });
   }
 
   /// Send a user message and get Scout's reply. Both are persisted by
@@ -1225,12 +1253,20 @@ class ScoutService {
     await _db.from('scout_messages').delete().eq('id', messageId);
   }
 
-  Future<String> ask(String content, {String? imageUrl}) async {
+  /// Send a message to Scout. Three modes:
+  ///   - no tripId, no private: global 1:1 Scout chat (bottom-nav)
+  ///   - tripId set, private=false: @scout in a group chat (broadcast)
+  ///   - tripId set, private=true: solo-trip in-space Scout chat
+  ///     (1:1 history scoped to the trip)
+  Future<String> ask(String content,
+      {String? imageUrl, String? tripId, bool private = false}) async {
     final res = await _db.functions.invoke(
       'scout_chat',
       body: {
         'content': content,
         if (imageUrl != null) 'image_url': imageUrl,
+        if (tripId != null) 'trip_id': tripId,
+        if (private) 'private': true,
       },
     );
     if (res.status != 200) {

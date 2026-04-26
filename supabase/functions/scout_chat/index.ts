@@ -22,7 +22,10 @@ when you can. if unsure where it is, say what you notice and guess a region.`;
 
 Deno.serve(async (req) => {
   try {
-    const { content, trip_id, image_url } = await req.json();
+    // `private` = true means this is a solo-trip in-space Scout chat:
+    // the assistant reply gets persisted to scout_messages with
+    // trip_id set, NOT broadcast to the trip's group chat. v1.1.
+    const { content, trip_id, image_url, private: isPrivate } = await req.json();
     if (!content || typeof content !== "string") {
       return new Response(JSON.stringify({ error: "content is required" }), {
         status: 400,
@@ -93,8 +96,16 @@ Deno.serve(async (req) => {
     const reply = (message.content[0] as { text: string }).text.trim();
 
     // Persist
-    if (trip_id) {
-      // Post as a chat_message so the whole squad sees it inline
+    if (trip_id && isPrivate) {
+      // Solo trip in-space Scout — private 1:1 chat scoped to the trip.
+      await service.from("scout_messages").insert({
+        user_id: userId,
+        role: "assistant",
+        content: reply,
+        trip_id,
+      });
+    } else if (trip_id) {
+      // @scout tagged in a group chat — broadcast to the squad inline.
       await service.from("chat_messages").insert({
         trip_id,
         user_id: null,
@@ -104,7 +115,7 @@ Deno.serve(async (req) => {
         is_ai: true,
       });
     } else {
-      // 1:1 Scout history
+      // Global 1:1 Scout history (bottom-nav Scout tab).
       await service.from("scout_messages").insert({
         user_id: userId,
         role: "assistant",

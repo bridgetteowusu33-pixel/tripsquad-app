@@ -941,6 +941,154 @@ final scoutHistoryProvider =
 );
 
 typedef ScoutHistoryRef = AutoDisposeStreamProviderRef<List<ScoutMessage>>;
+String _$scoutTripHistoryHash() => r'2fef6299ce58cf95baa3cad2273acc0c0847f419';
+
+/// Trip-scoped Scout chat — only messages tagged with this trip_id.
+/// Used by the in-trip Scout tab on solo trips. v1.1.
+///
+/// Copied from [scoutTripHistory].
+@ProviderFor(scoutTripHistory)
+const scoutTripHistoryProvider = ScoutTripHistoryFamily();
+
+/// Trip-scoped Scout chat — only messages tagged with this trip_id.
+/// Used by the in-trip Scout tab on solo trips. v1.1.
+///
+/// Copied from [scoutTripHistory].
+class ScoutTripHistoryFamily extends Family<AsyncValue<List<ScoutMessage>>> {
+  /// Trip-scoped Scout chat — only messages tagged with this trip_id.
+  /// Used by the in-trip Scout tab on solo trips. v1.1.
+  ///
+  /// Copied from [scoutTripHistory].
+  const ScoutTripHistoryFamily();
+
+  /// Trip-scoped Scout chat — only messages tagged with this trip_id.
+  /// Used by the in-trip Scout tab on solo trips. v1.1.
+  ///
+  /// Copied from [scoutTripHistory].
+  ScoutTripHistoryProvider call(
+    String tripId,
+  ) {
+    return ScoutTripHistoryProvider(
+      tripId,
+    );
+  }
+
+  @override
+  ScoutTripHistoryProvider getProviderOverride(
+    covariant ScoutTripHistoryProvider provider,
+  ) {
+    return call(
+      provider.tripId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'scoutTripHistoryProvider';
+}
+
+/// Trip-scoped Scout chat — only messages tagged with this trip_id.
+/// Used by the in-trip Scout tab on solo trips. v1.1.
+///
+/// Copied from [scoutTripHistory].
+class ScoutTripHistoryProvider
+    extends AutoDisposeStreamProvider<List<ScoutMessage>> {
+  /// Trip-scoped Scout chat — only messages tagged with this trip_id.
+  /// Used by the in-trip Scout tab on solo trips. v1.1.
+  ///
+  /// Copied from [scoutTripHistory].
+  ScoutTripHistoryProvider(
+    String tripId,
+  ) : this._internal(
+          (ref) => scoutTripHistory(
+            ref as ScoutTripHistoryRef,
+            tripId,
+          ),
+          from: scoutTripHistoryProvider,
+          name: r'scoutTripHistoryProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$scoutTripHistoryHash,
+          dependencies: ScoutTripHistoryFamily._dependencies,
+          allTransitiveDependencies:
+              ScoutTripHistoryFamily._allTransitiveDependencies,
+          tripId: tripId,
+        );
+
+  ScoutTripHistoryProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.tripId,
+  }) : super.internal();
+
+  final String tripId;
+
+  @override
+  Override overrideWith(
+    Stream<List<ScoutMessage>> Function(ScoutTripHistoryRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ScoutTripHistoryProvider._internal(
+        (ref) => create(ref as ScoutTripHistoryRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        tripId: tripId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeStreamProviderElement<List<ScoutMessage>> createElement() {
+    return _ScoutTripHistoryProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ScoutTripHistoryProvider && other.tripId == tripId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, tripId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin ScoutTripHistoryRef on AutoDisposeStreamProviderRef<List<ScoutMessage>> {
+  /// The parameter `tripId` of this provider.
+  String get tripId;
+}
+
+class _ScoutTripHistoryProviderElement
+    extends AutoDisposeStreamProviderElement<List<ScoutMessage>>
+    with ScoutTripHistoryRef {
+  _ScoutTripHistoryProviderElement(super.provider);
+
+  @override
+  String get tripId => (origin as ScoutTripHistoryProvider).tripId;
+}
+
 String _$scoutStreakHash() => r'892f6a371a2483b9aea6c9e9ea8869ebec37ee85';
 
 /// Consecutive-day streak of Scout engagement. Counts back from today

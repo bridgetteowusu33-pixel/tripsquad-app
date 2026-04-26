@@ -31,7 +31,14 @@ const _quickPrompts = [
 ];
 
 class ScoutTabScreen extends ConsumerStatefulWidget {
-  const ScoutTabScreen({super.key});
+  /// When `tripId` is non-null, this Scout chat is scoped to a single
+  /// trip: messages are persisted with `scout_messages.trip_id` set,
+  /// the history stream filters to that trip, and `ask()` is called
+  /// with `private: true` so the edge function persists the reply
+  /// in the same scoped row instead of broadcasting to chat_messages.
+  /// v1.1 — used by the solo-trip in-space Scout tab.
+  const ScoutTabScreen({super.key, this.tripId});
+  final String? tripId;
 
   @override
   ConsumerState<ScoutTabScreen> createState() => _ScoutTabScreenState();
@@ -77,10 +84,28 @@ class _ScoutTabScreenState extends ConsumerState<ScoutTabScreen>
   /// away. Re-invalidating `scoutHistoryProvider` on resume forces a
   /// fresh fetch so Scout's reply surfaces without the user having
   /// to force-close the app.
+  // True when this Scout chat is scoped to a specific trip (solo
+  // in-trip Scout tab). When true, all reads/writes carry trip_id.
+  bool get _isTripScoped => widget.tripId != null;
+
+  // History provider — global by default, trip-scoped when in a trip.
+  ProviderListenable<AsyncValue<List<ScoutMessage>>> get _historyProvider =>
+      _isTripScoped
+          ? scoutTripHistoryProvider(widget.tripId!)
+          : scoutHistoryProvider;
+
+  void _invalidateHistory() {
+    if (_isTripScoped) {
+      ref.invalidate(scoutTripHistoryProvider(widget.tripId!));
+    } else {
+      ref.invalidate(scoutHistoryProvider);
+    }
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && mounted) {
-      ref.invalidate(scoutHistoryProvider);
+      _invalidateHistory();
     }
   }
 
@@ -90,6 +115,9 @@ class _ScoutTabScreenState extends ConsumerState<ScoutTabScreen>
   /// `scout_welcomed_<uid>` SharedPreferences key so it never
   /// fires twice, even if the user later clears their history.
   Future<void> _maybeSeedWelcome() async {
+    // Trip-scoped chats get their own welcome implicitly (or none) —
+    // skip the global onboarding seed here.
+    if (_isTripScoped) return;
     final uid = Supabase.instance.client.auth.currentUser?.id;
     if (uid == null) return;
     final prefs = await SharedPreferences.getInstance();
@@ -130,13 +158,18 @@ class _ScoutTabScreenState extends ConsumerState<ScoutTabScreen>
           'user_id': uid,
           'role': 'user',
           'content': text,
+          if (_isTripScoped) 'trip_id': widget.tripId,
         });
       }
       TSHaptics.light();
       // Dismiss keyboard so the user can see Scout thinking + reply
       FocusManager.instance.primaryFocus?.unfocus();
       // Edge function generates + persists the assistant reply
-      await ref.read(scoutServiceProvider).ask(text);
+      await ref.read(scoutServiceProvider).ask(
+            text,
+            tripId: widget.tripId,
+            private: _isTripScoped,
+          );
       TSHaptics.medium();
     } catch (e) {
       if (mounted) {
@@ -184,11 +217,15 @@ class _ScoutTabScreenState extends ConsumerState<ScoutTabScreen>
         'role': 'user',
         'content': prompt,
         'image_url': url,
+        if (_isTripScoped) 'trip_id': widget.tripId,
       });
       FocusManager.instance.primaryFocus?.unfocus();
       await ref
           .read(scoutServiceProvider)
-          .ask(prompt, imageUrl: url);
+          .ask(prompt,
+              imageUrl: url,
+              tripId: widget.tripId,
+              private: _isTripScoped);
       TSHaptics.medium();
     } catch (e) {
       if (mounted) {
@@ -239,7 +276,7 @@ class _ScoutTabScreenState extends ConsumerState<ScoutTabScreen>
 
   @override
   Widget build(BuildContext context) {
-    final history = ref.watch(scoutHistoryProvider);
+    final history = ref.watch(_historyProvider);
     // On iPad / wide screens, bump every Scout text via TextScaler so
     // the chat reads comfortably at arm's-length tablet distance.
     final isWide = MediaQuery.of(context).size.width >= 700;

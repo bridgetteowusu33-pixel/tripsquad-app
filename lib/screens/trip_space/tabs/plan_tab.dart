@@ -639,6 +639,21 @@ class _DayHeader extends StatelessWidget {
     final date = tripStartDate?.add(Duration(days: day - 1));
     final dayTotal = activities.fold<int>(
         0, (acc, a) => acc + (a.estimatedCostCents ?? 0));
+    // Pick the most-common location among today's activities as the
+    // day's anchor city. Helps country-level trips ("Ghana") read
+    // intelligibly: "Day 4 · Cape Coast" instead of just "Day 4".
+    String? city;
+    final counts = <String, int>{};
+    for (final a in activities) {
+      final loc = a.location?.trim();
+      if (loc == null || loc.isEmpty) continue;
+      counts[loc] = (counts[loc] ?? 0) + 1;
+    }
+    if (counts.isNotEmpty) {
+      final best = counts.entries.reduce(
+          (a, b) => a.value >= b.value ? a : b);
+      city = best.key;
+    }
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(children: [
@@ -646,6 +661,11 @@ class _DayHeader extends StatelessWidget {
         const SizedBox(width: 10),
         if (date != null)
           Text(_fmtDate(date), style: TSTextStyles.title(size: 14)),
+        if (city != null) ...[
+          const SizedBox(width: 8),
+          Text('· $city',
+              style: TSTextStyles.caption(color: TSColors.muted)),
+        ],
         const Spacer(),
         if (dayTotal > 0)
           Text('\$${(dayTotal / 100).toStringAsFixed(0)}',

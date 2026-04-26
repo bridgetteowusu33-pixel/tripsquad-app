@@ -158,7 +158,10 @@ class _TripRevealScreenState extends ConsumerState<TripRevealScreen> {
             .animate()
             .fadeIn(duration: 500.ms),
         const SizedBox(height: 4),
-        Text('your squad is going',
+        Text(
+                trip.mode == TripMode.solo
+                    ? "you're going"
+                    : 'your squad is going',
                 style: TSTextStyles.caption(color: TSColors.muted))
             .animate(delay: 200.ms)
             .fadeIn(duration: 400.ms),
@@ -234,8 +237,10 @@ class _TripRevealScreenState extends ConsumerState<TripRevealScreen> {
     TSHaptics.ctaCommit();
     final inviteUrl =
         'https://gettripsquad.com/join/?t=${trip.inviteToken ?? trip.id}';
-    final text =
-        "we're going to $dest ✈️🎉\nplanned with tripsquad: $inviteUrl";
+    // Solo trips share with no invite URL — there's no squad to join.
+    final text = trip.mode == TripMode.solo
+        ? "i'm going to $dest ✈️🎉\nplanned with tripsquad: https://gettripsquad.com"
+        : "we're going to $dest ✈️🎉\nplanned with tripsquad: $inviteUrl";
 
     Rect? origin;
     try {
@@ -271,8 +276,9 @@ class _TripRevealScreenState extends ConsumerState<TripRevealScreen> {
   Future<void> _share(
       BuildContext btnCtx, Trip trip, String dest, String hostTag) async {
     TSHaptics.ctaCommit();
-    final text =
-        "we're going to $dest ✈️🎉 · planned with tripsquad\nhttps://gettripsquad.com";
+    final text = trip.mode == TripMode.solo
+        ? "i'm going to $dest ✈️🎉 · planned with tripsquad\nhttps://gettripsquad.com"
+        : "we're going to $dest ✈️🎉 · planned with tripsquad\nhttps://gettripsquad.com";
 
     // Position origin for iPad — iOS requires this for share sheets; on
     // iPhone it's ignored. Derived from the tapped button.

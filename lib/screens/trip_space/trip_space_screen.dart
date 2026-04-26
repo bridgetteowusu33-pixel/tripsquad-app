@@ -278,7 +278,11 @@ class _TripSpaceInnerState extends ConsumerState<_TripSpaceInner>
     // Detect the voting → revealed transition (or any transition into
     // revealed from a pre-revealed phase) and auto-play the reveal
     // cinematic. Deferred to post-frame so we don't push during build.
-    final becameRevealed = status == TripStatus.revealed &&
+    //
+    // v1.1 — solo trips skip the cinematic. There's no surprise:
+    // the user picked the destination themselves during creation.
+    final becameRevealed = widget.trip.mode != TripMode.solo &&
+        status == TripStatus.revealed &&
         previous != TripStatus.revealed &&
         previous != TripStatus.planning &&
         previous != TripStatus.live &&

@@ -171,9 +171,150 @@ class _PlanTabState extends ConsumerState<PlanTab> {
               ),
               const SizedBox(height: 24),
             ],
+            // v1.1 — solo trips have no Squad tab to reach the
+            // delete affordance, so it lives here at the bottom of
+            // the Plan tab. Group trips keep the existing Squad-tab
+            // location.
+            if (widget.trip.mode == TripMode.solo) ...[
+              const SizedBox(height: 12),
+              _SoloDeleteFooter(trip: widget.trip),
+            ],
           ],
         );
       },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  _SoloDeleteFooter — host-only delete on solo trips
+// ─────────────────────────────────────────────────────────────
+//
+//  v1.1. Squad tab (which normally owns "delete trip") is hidden
+//  on solo trips, so we surface the same flow at the very bottom
+//  of the Plan tab. Same confirmation sheet semantics as the
+//  Squad-tab version (see squad_tab.dart::_DeleteTripRow) — kept
+//  inline rather than refactoring to share, since the surrounding
+//  copy is solo-specific.
+//
+class _SoloDeleteFooter extends ConsumerWidget {
+  const _SoloDeleteFooter({required this.trip});
+  final Trip trip;
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    TSHaptics.medium();
+    final name = trip.selectedDestination ?? trip.name;
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      constraints: TSResponsive.modalConstraints,
+      backgroundColor: TSColors.s1,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheet) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: TSColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Text('delete $name?',
+                  style: TSTextStyles.heading(size: 20)),
+              const SizedBox(height: 6),
+              Text(
+                "this wipes the trip — itinerary, packing, photos, all of it. there's no undo.",
+                style: TSTextStyles.caption(color: TSColors.muted),
+              ),
+              const SizedBox(height: 18),
+              Row(children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(sheet).pop(false),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: TSColors.s2,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text('keep it',
+                          style: TSTextStyles.title(
+                              size: 13, color: TSColors.text)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(sheet).pop(true),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: TSColors.coral,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text('delete',
+                          style: TSTextStyles.title(
+                              size: 13, color: Colors.white)),
+                    ),
+                  ),
+                ),
+              ]),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref.read(tripServiceProvider).deleteTrip(trip.id);
+      ref.invalidate(myTripsProvider);
+      if (!context.mounted) return;
+      context.go('/trips');
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        backgroundColor: TSColors.coral,
+        behavior: SnackBarBehavior.floating,
+        content: Text("couldn't delete — ${humanizeError(e)}",
+            style: TSTextStyles.body(color: TSColors.bg, size: 13)),
+      ));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    if (uid == null || uid != trip.hostId) return const SizedBox();
+    return GestureDetector(
+      onTap: () => _confirmDelete(context, ref),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+        decoration: BoxDecoration(
+          color: TSColors.s2,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: TSColors.border),
+        ),
+        child: Row(children: [
+          Icon(Icons.delete_outline,
+              color: TSColors.coral, size: 18),
+          const SizedBox(width: 10),
+          Text('delete trip',
+              style: TSTextStyles.label(color: TSColors.coral)),
+        ]),
+      ),
     );
   }
 }

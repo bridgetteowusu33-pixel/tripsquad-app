@@ -119,13 +119,6 @@ class _PlanTabState extends ConsumerState<PlanTab> {
               const SizedBox(height: 10),
               _PendingBanner(count: pendingCount, isHost: isHost),
             ],
-            // v1.1 — solo trips show a "bring friends in" affordance
-            // here. One-way conversion to group; preserves all the
-            // planning the user has already done solo.
-            if (widget.trip.mode == TripMode.solo) ...[
-              const SizedBox(height: 10),
-              _BringFriendsInCard(trip: widget.trip),
-            ],
             const SizedBox(height: 10),
             _AskScoutRow(trip: widget.trip),
             const SizedBox(height: 12),
@@ -171,14 +164,6 @@ class _PlanTabState extends ConsumerState<PlanTab> {
                 defaultType: _typeFilter == 'all' ? 'activity' : _typeFilter,
               ),
               const SizedBox(height: 24),
-            ],
-            // v1.1 — solo trips have no Squad tab to reach the
-            // delete affordance, so it lives here at the bottom of
-            // the Plan tab. Group trips keep the existing Squad-tab
-            // location.
-            if (widget.trip.mode == TripMode.solo) ...[
-              const SizedBox(height: 12),
-              _SoloDeleteFooter(trip: widget.trip),
             ],
           ],
         );

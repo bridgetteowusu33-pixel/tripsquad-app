@@ -105,6 +105,12 @@ class _SquadTabState extends ConsumerState<SquadTab> {
 
   @override
   Widget build(BuildContext context) {
+    // v1.1 — solo trips render this tab as "Settings": the place
+    // to bring friends in (convert to group) and delete the trip.
+    // No squad list, no invite-by-tag — those don't apply.
+    if (widget.trip.mode == TripMode.solo) {
+      return _SoloSettingsBody(trip: widget.trip);
+    }
     final squadAsync = ref.watch(squadStreamProvider(widget.trip.id));
     return squadAsync.when(
       loading: () =>
@@ -1555,6 +1561,149 @@ class _SquadRow extends ConsumerWidget {
         ]),
       ),
     ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  _SoloSettingsBody — what the "settings" tab renders for solo
+// ─────────────────────────────────────────────────────────────
+//
+//  v1.1. Solo trips reuse this tab slot (originally "squad") for
+//  trip-level settings: bring friends in (one-way conversion to
+//  group) + delete trip. No squad list, no invite-by-tag — those
+//  are group-only concepts.
+//
+class _SoloSettingsBody extends ConsumerStatefulWidget {
+  const _SoloSettingsBody({required this.trip});
+  final Trip trip;
+
+  @override
+  ConsumerState<_SoloSettingsBody> createState() =>
+      _SoloSettingsBodyState();
+}
+
+class _SoloSettingsBodyState extends ConsumerState<_SoloSettingsBody> {
+  bool _converting = false;
+
+  Future<void> _convert() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: TSColors.s2,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        title: Text('bring friends in?',
+            style: TSTextStyles.heading(size: 18)),
+        content: Text(
+          "this turns the trip into a squad trip. you'll get an "
+          "invite link to share. everything you've planned so far "
+          "stays. you can't switch back to solo after this.",
+          style: TSTextStyles.body(color: TSColors.text2, size: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('not yet',
+                style: TSTextStyles.label(color: TSColors.muted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('yes, share invite',
+                style: TSTextStyles.label(color: TSColors.lime)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _converting = true);
+    try {
+      await ref.read(tripServiceProvider).convertToGroup(widget.trip.id);
+      ref.invalidate(myTripsProvider);
+      TSHaptics.success();
+      if (!mounted) return;
+      context.push('/trip/${widget.trip.id}/invite');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        backgroundColor: TSColors.coral,
+        behavior: SnackBarBehavior.floating,
+        content: Text("couldn't convert — try again",
+            style: TSTextStyles.body(color: TSColors.bg, size: 13)),
+      ));
+    } finally {
+      if (mounted) setState(() => _converting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 80),
+      children: [
+        // "Solo trip" badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: TSColors.s2,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: TSColors.border),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Text('🧳', style: TextStyle(fontSize: 14)),
+            const SizedBox(width: 6),
+            Text('solo trip',
+                style: TSTextStyles.label(color: TSColors.text2, size: 11)),
+          ]),
+        ),
+        const SizedBox(height: 18),
+
+        // Bring friends in — primary action
+        GestureDetector(
+          onTap: _converting ? null : _convert,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: TSColors.limeDim(0.08),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: TSColors.limeDim(0.28)),
+            ),
+            child: Row(children: [
+              const Text('👥', style: TextStyle(fontSize: 28)),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('bring friends in',
+                        style: TSTextStyles.title(size: 15)),
+                    const SizedBox(height: 2),
+                    Text(
+                      "turn this into a squad trip — keep everything you've planned.",
+                      style: TSTextStyles.caption(color: TSColors.muted),
+                    ),
+                  ],
+                ),
+              ),
+              if (_converting)
+                const SizedBox(
+                  width: 18, height: 18,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: TSColors.lime),
+                )
+              else
+                Icon(Icons.chevron_right,
+                    color: TSColors.muted, size: 20),
+            ]),
+          ),
+        ),
+
+        const SizedBox(height: 32),
+
+        // Danger zone — delete reuses the existing _DeleteTripRow
+        // higher up in this file (works for any trip mode).
+        _DeleteTripRow(trip: widget.trip),
+      ],
     );
   }
 }

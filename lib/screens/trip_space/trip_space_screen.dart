@@ -189,18 +189,22 @@ class _TripSpaceInnerState extends ConsumerState<_TripSpaceInner>
     final raw = _baseTabsForStatus(s);
     if (m != TripMode.solo) return raw;
     // Solo filtering:
-    //  - Drop the Squad tab (you're the only one — nothing to see).
-    //  - Drop the Vote tab (replaced by destination picking inside
-    //    the trip space; for now just hide it — Scout's Picks lands
-    //    in a follow-up slice).
+    //  - Drop the Vote tab (no group to vote — solo picks during
+    //    creation; Scout's Picks lands in a follow-up slice).
     //  - Rename the Chat tab to Scout, and re-key it to 'scout' so
     //    the route renders the trip-scoped Scout chat instead of the
     //    group chat.
+    //  - Rename the Squad tab to "settings". The tab still exists
+    //    so solo users have a place to bring friends in (convert
+    //    to group) and delete the trip. The body of the tab will
+    //    branch on mode in squad_tab.dart.
     return raw
-        .where((t) => t.key != 'squad' && t.key != 'vote')
-        .map((t) => t.key == 'chat'
-            ? const _TabDef('scout', 'scout')
-            : t)
+        .where((t) => t.key != 'vote')
+        .map((t) {
+          if (t.key == 'chat') return const _TabDef('scout', 'scout');
+          if (t.key == 'squad') return const _TabDef('squad', 'settings');
+          return t;
+        })
         .toList();
   }
 

@@ -1784,6 +1784,140 @@ class _ItineraryNotesStreamProviderElement
   String get itemId => (origin as ItineraryNotesStreamProvider).itemId;
 }
 
+String _$tripRecommendationsHash() =>
+    r'159068384d9d14f9e2902574e08f313bc404abdb';
+
+/// See also [tripRecommendations].
+@ProviderFor(tripRecommendations)
+const tripRecommendationsProvider = TripRecommendationsFamily();
+
+/// See also [tripRecommendations].
+class TripRecommendationsFamily
+    extends Family<AsyncValue<List<TripRecommendation>>> {
+  /// See also [tripRecommendations].
+  const TripRecommendationsFamily();
+
+  /// See also [tripRecommendations].
+  TripRecommendationsProvider call(
+    String tripId,
+  ) {
+    return TripRecommendationsProvider(
+      tripId,
+    );
+  }
+
+  @override
+  TripRecommendationsProvider getProviderOverride(
+    covariant TripRecommendationsProvider provider,
+  ) {
+    return call(
+      provider.tripId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'tripRecommendationsProvider';
+}
+
+/// See also [tripRecommendations].
+class TripRecommendationsProvider
+    extends AutoDisposeStreamProvider<List<TripRecommendation>> {
+  /// See also [tripRecommendations].
+  TripRecommendationsProvider(
+    String tripId,
+  ) : this._internal(
+          (ref) => tripRecommendations(
+            ref as TripRecommendationsRef,
+            tripId,
+          ),
+          from: tripRecommendationsProvider,
+          name: r'tripRecommendationsProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$tripRecommendationsHash,
+          dependencies: TripRecommendationsFamily._dependencies,
+          allTransitiveDependencies:
+              TripRecommendationsFamily._allTransitiveDependencies,
+          tripId: tripId,
+        );
+
+  TripRecommendationsProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.tripId,
+  }) : super.internal();
+
+  final String tripId;
+
+  @override
+  Override overrideWith(
+    Stream<List<TripRecommendation>> Function(TripRecommendationsRef provider)
+        create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: TripRecommendationsProvider._internal(
+        (ref) => create(ref as TripRecommendationsRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        tripId: tripId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeStreamProviderElement<List<TripRecommendation>> createElement() {
+    return _TripRecommendationsProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TripRecommendationsProvider && other.tripId == tripId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, tripId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin TripRecommendationsRef
+    on AutoDisposeStreamProviderRef<List<TripRecommendation>> {
+  /// The parameter `tripId` of this provider.
+  String get tripId;
+}
+
+class _TripRecommendationsProviderElement
+    extends AutoDisposeStreamProviderElement<List<TripRecommendation>>
+    with TripRecommendationsRef {
+  _TripRecommendationsProviderElement(super.provider);
+
+  @override
+  String get tripId => (origin as TripRecommendationsProvider).tripId;
+}
+
 String _$tripCreationHash() => r'4c89df0020c12e584e335e8e05ff6c3328b20ee7';
 
 /// See also [TripCreation].

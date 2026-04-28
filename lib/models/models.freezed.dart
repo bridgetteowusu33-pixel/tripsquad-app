@@ -8755,3 +8755,509 @@ abstract class _MatchProfile implements MatchProfile {
   _$$MatchProfileImplCopyWith<_$MatchProfileImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
+
+TripRecommendation _$TripRecommendationFromJson(Map<String, dynamic> json) {
+  return _TripRecommendation.fromJson(json);
+}
+
+/// @nodoc
+mixin _$TripRecommendation {
+  String get id => throw _privateConstructorUsedError;
+  String get tripId => throw _privateConstructorUsedError;
+  RecommendationKind get kind => throw _privateConstructorUsedError;
+  int get rank => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+  String? get neighborhood => throw _privateConstructorUsedError;
+  String? get priceBand => throw _privateConstructorUsedError; // '$' .. '$$$$'
+  String? get cuisine => throw _privateConstructorUsedError; // restaurants only
+  List<String> get vibeTags => throw _privateConstructorUsedError;
+  String? get reason =>
+      throw _privateConstructorUsedError; // "why scout picked it" — 1-2 sentences
+  int? get dayAnchor =>
+      throw _privateConstructorUsedError; // nearest itinerary day_number, nullable
+  String? get meal =>
+      throw _privateConstructorUsedError; // breakfast | lunch | dinner | late-night | snack
+  String? get imageUrl => throw _privateConstructorUsedError;
+  String? get mapsUrl =>
+      throw _privateConstructorUsedError; // Google Maps deep link, always populated by Edge Fn
+  String? get bookingUrl =>
+      throw _privateConstructorUsedError; // hotels only — Booking.com search URL
+  String? get placeId => throw _privateConstructorUsedError;
+  DateTime? get createdAt => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $TripRecommendationCopyWith<TripRecommendation> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TripRecommendationCopyWith<$Res> {
+  factory $TripRecommendationCopyWith(
+          TripRecommendation value, $Res Function(TripRecommendation) then) =
+      _$TripRecommendationCopyWithImpl<$Res, TripRecommendation>;
+  @useResult
+  $Res call(
+      {String id,
+      String tripId,
+      RecommendationKind kind,
+      int rank,
+      String name,
+      String? neighborhood,
+      String? priceBand,
+      String? cuisine,
+      List<String> vibeTags,
+      String? reason,
+      int? dayAnchor,
+      String? meal,
+      String? imageUrl,
+      String? mapsUrl,
+      String? bookingUrl,
+      String? placeId,
+      DateTime? createdAt});
+}
+
+/// @nodoc
+class _$TripRecommendationCopyWithImpl<$Res, $Val extends TripRecommendation>
+    implements $TripRecommendationCopyWith<$Res> {
+  _$TripRecommendationCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? tripId = null,
+    Object? kind = null,
+    Object? rank = null,
+    Object? name = null,
+    Object? neighborhood = freezed,
+    Object? priceBand = freezed,
+    Object? cuisine = freezed,
+    Object? vibeTags = null,
+    Object? reason = freezed,
+    Object? dayAnchor = freezed,
+    Object? meal = freezed,
+    Object? imageUrl = freezed,
+    Object? mapsUrl = freezed,
+    Object? bookingUrl = freezed,
+    Object? placeId = freezed,
+    Object? createdAt = freezed,
+  }) {
+    return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      tripId: null == tripId
+          ? _value.tripId
+          : tripId // ignore: cast_nullable_to_non_nullable
+              as String,
+      kind: null == kind
+          ? _value.kind
+          : kind // ignore: cast_nullable_to_non_nullable
+              as RecommendationKind,
+      rank: null == rank
+          ? _value.rank
+          : rank // ignore: cast_nullable_to_non_nullable
+              as int,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      neighborhood: freezed == neighborhood
+          ? _value.neighborhood
+          : neighborhood // ignore: cast_nullable_to_non_nullable
+              as String?,
+      priceBand: freezed == priceBand
+          ? _value.priceBand
+          : priceBand // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cuisine: freezed == cuisine
+          ? _value.cuisine
+          : cuisine // ignore: cast_nullable_to_non_nullable
+              as String?,
+      vibeTags: null == vibeTags
+          ? _value.vibeTags
+          : vibeTags // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      reason: freezed == reason
+          ? _value.reason
+          : reason // ignore: cast_nullable_to_non_nullable
+              as String?,
+      dayAnchor: freezed == dayAnchor
+          ? _value.dayAnchor
+          : dayAnchor // ignore: cast_nullable_to_non_nullable
+              as int?,
+      meal: freezed == meal
+          ? _value.meal
+          : meal // ignore: cast_nullable_to_non_nullable
+              as String?,
+      imageUrl: freezed == imageUrl
+          ? _value.imageUrl
+          : imageUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      mapsUrl: freezed == mapsUrl
+          ? _value.mapsUrl
+          : mapsUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      bookingUrl: freezed == bookingUrl
+          ? _value.bookingUrl
+          : bookingUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      placeId: freezed == placeId
+          ? _value.placeId
+          : placeId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$TripRecommendationImplCopyWith<$Res>
+    implements $TripRecommendationCopyWith<$Res> {
+  factory _$$TripRecommendationImplCopyWith(_$TripRecommendationImpl value,
+          $Res Function(_$TripRecommendationImpl) then) =
+      __$$TripRecommendationImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String tripId,
+      RecommendationKind kind,
+      int rank,
+      String name,
+      String? neighborhood,
+      String? priceBand,
+      String? cuisine,
+      List<String> vibeTags,
+      String? reason,
+      int? dayAnchor,
+      String? meal,
+      String? imageUrl,
+      String? mapsUrl,
+      String? bookingUrl,
+      String? placeId,
+      DateTime? createdAt});
+}
+
+/// @nodoc
+class __$$TripRecommendationImplCopyWithImpl<$Res>
+    extends _$TripRecommendationCopyWithImpl<$Res, _$TripRecommendationImpl>
+    implements _$$TripRecommendationImplCopyWith<$Res> {
+  __$$TripRecommendationImplCopyWithImpl(_$TripRecommendationImpl _value,
+      $Res Function(_$TripRecommendationImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? tripId = null,
+    Object? kind = null,
+    Object? rank = null,
+    Object? name = null,
+    Object? neighborhood = freezed,
+    Object? priceBand = freezed,
+    Object? cuisine = freezed,
+    Object? vibeTags = null,
+    Object? reason = freezed,
+    Object? dayAnchor = freezed,
+    Object? meal = freezed,
+    Object? imageUrl = freezed,
+    Object? mapsUrl = freezed,
+    Object? bookingUrl = freezed,
+    Object? placeId = freezed,
+    Object? createdAt = freezed,
+  }) {
+    return _then(_$TripRecommendationImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      tripId: null == tripId
+          ? _value.tripId
+          : tripId // ignore: cast_nullable_to_non_nullable
+              as String,
+      kind: null == kind
+          ? _value.kind
+          : kind // ignore: cast_nullable_to_non_nullable
+              as RecommendationKind,
+      rank: null == rank
+          ? _value.rank
+          : rank // ignore: cast_nullable_to_non_nullable
+              as int,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      neighborhood: freezed == neighborhood
+          ? _value.neighborhood
+          : neighborhood // ignore: cast_nullable_to_non_nullable
+              as String?,
+      priceBand: freezed == priceBand
+          ? _value.priceBand
+          : priceBand // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cuisine: freezed == cuisine
+          ? _value.cuisine
+          : cuisine // ignore: cast_nullable_to_non_nullable
+              as String?,
+      vibeTags: null == vibeTags
+          ? _value._vibeTags
+          : vibeTags // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      reason: freezed == reason
+          ? _value.reason
+          : reason // ignore: cast_nullable_to_non_nullable
+              as String?,
+      dayAnchor: freezed == dayAnchor
+          ? _value.dayAnchor
+          : dayAnchor // ignore: cast_nullable_to_non_nullable
+              as int?,
+      meal: freezed == meal
+          ? _value.meal
+          : meal // ignore: cast_nullable_to_non_nullable
+              as String?,
+      imageUrl: freezed == imageUrl
+          ? _value.imageUrl
+          : imageUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      mapsUrl: freezed == mapsUrl
+          ? _value.mapsUrl
+          : mapsUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      bookingUrl: freezed == bookingUrl
+          ? _value.bookingUrl
+          : bookingUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      placeId: freezed == placeId
+          ? _value.placeId
+          : placeId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TripRecommendationImpl implements _TripRecommendation {
+  const _$TripRecommendationImpl(
+      {required this.id,
+      required this.tripId,
+      required this.kind,
+      required this.rank,
+      required this.name,
+      this.neighborhood,
+      this.priceBand,
+      this.cuisine,
+      final List<String> vibeTags = const [],
+      this.reason,
+      this.dayAnchor,
+      this.meal,
+      this.imageUrl,
+      this.mapsUrl,
+      this.bookingUrl,
+      this.placeId,
+      this.createdAt})
+      : _vibeTags = vibeTags;
+
+  factory _$TripRecommendationImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TripRecommendationImplFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String tripId;
+  @override
+  final RecommendationKind kind;
+  @override
+  final int rank;
+  @override
+  final String name;
+  @override
+  final String? neighborhood;
+  @override
+  final String? priceBand;
+// '$' .. '$$$$'
+  @override
+  final String? cuisine;
+// restaurants only
+  final List<String> _vibeTags;
+// restaurants only
+  @override
+  @JsonKey()
+  List<String> get vibeTags {
+    if (_vibeTags is EqualUnmodifiableListView) return _vibeTags;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_vibeTags);
+  }
+
+  @override
+  final String? reason;
+// "why scout picked it" — 1-2 sentences
+  @override
+  final int? dayAnchor;
+// nearest itinerary day_number, nullable
+  @override
+  final String? meal;
+// breakfast | lunch | dinner | late-night | snack
+  @override
+  final String? imageUrl;
+  @override
+  final String? mapsUrl;
+// Google Maps deep link, always populated by Edge Fn
+  @override
+  final String? bookingUrl;
+// hotels only — Booking.com search URL
+  @override
+  final String? placeId;
+  @override
+  final DateTime? createdAt;
+
+  @override
+  String toString() {
+    return 'TripRecommendation(id: $id, tripId: $tripId, kind: $kind, rank: $rank, name: $name, neighborhood: $neighborhood, priceBand: $priceBand, cuisine: $cuisine, vibeTags: $vibeTags, reason: $reason, dayAnchor: $dayAnchor, meal: $meal, imageUrl: $imageUrl, mapsUrl: $mapsUrl, bookingUrl: $bookingUrl, placeId: $placeId, createdAt: $createdAt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TripRecommendationImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.tripId, tripId) || other.tripId == tripId) &&
+            (identical(other.kind, kind) || other.kind == kind) &&
+            (identical(other.rank, rank) || other.rank == rank) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.neighborhood, neighborhood) ||
+                other.neighborhood == neighborhood) &&
+            (identical(other.priceBand, priceBand) ||
+                other.priceBand == priceBand) &&
+            (identical(other.cuisine, cuisine) || other.cuisine == cuisine) &&
+            const DeepCollectionEquality().equals(other._vibeTags, _vibeTags) &&
+            (identical(other.reason, reason) || other.reason == reason) &&
+            (identical(other.dayAnchor, dayAnchor) ||
+                other.dayAnchor == dayAnchor) &&
+            (identical(other.meal, meal) || other.meal == meal) &&
+            (identical(other.imageUrl, imageUrl) ||
+                other.imageUrl == imageUrl) &&
+            (identical(other.mapsUrl, mapsUrl) || other.mapsUrl == mapsUrl) &&
+            (identical(other.bookingUrl, bookingUrl) ||
+                other.bookingUrl == bookingUrl) &&
+            (identical(other.placeId, placeId) || other.placeId == placeId) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      tripId,
+      kind,
+      rank,
+      name,
+      neighborhood,
+      priceBand,
+      cuisine,
+      const DeepCollectionEquality().hash(_vibeTags),
+      reason,
+      dayAnchor,
+      meal,
+      imageUrl,
+      mapsUrl,
+      bookingUrl,
+      placeId,
+      createdAt);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TripRecommendationImplCopyWith<_$TripRecommendationImpl> get copyWith =>
+      __$$TripRecommendationImplCopyWithImpl<_$TripRecommendationImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TripRecommendationImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _TripRecommendation implements TripRecommendation {
+  const factory _TripRecommendation(
+      {required final String id,
+      required final String tripId,
+      required final RecommendationKind kind,
+      required final int rank,
+      required final String name,
+      final String? neighborhood,
+      final String? priceBand,
+      final String? cuisine,
+      final List<String> vibeTags,
+      final String? reason,
+      final int? dayAnchor,
+      final String? meal,
+      final String? imageUrl,
+      final String? mapsUrl,
+      final String? bookingUrl,
+      final String? placeId,
+      final DateTime? createdAt}) = _$TripRecommendationImpl;
+
+  factory _TripRecommendation.fromJson(Map<String, dynamic> json) =
+      _$TripRecommendationImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  String get tripId;
+  @override
+  RecommendationKind get kind;
+  @override
+  int get rank;
+  @override
+  String get name;
+  @override
+  String? get neighborhood;
+  @override
+  String? get priceBand;
+  @override // '$' .. '$$$$'
+  String? get cuisine;
+  @override // restaurants only
+  List<String> get vibeTags;
+  @override
+  String? get reason;
+  @override // "why scout picked it" — 1-2 sentences
+  int? get dayAnchor;
+  @override // nearest itinerary day_number, nullable
+  String? get meal;
+  @override // breakfast | lunch | dinner | late-night | snack
+  String? get imageUrl;
+  @override
+  String? get mapsUrl;
+  @override // Google Maps deep link, always populated by Edge Fn
+  String? get bookingUrl;
+  @override // hotels only — Booking.com search URL
+  String? get placeId;
+  @override
+  DateTime? get createdAt;
+  @override
+  @JsonKey(ignore: true)
+  _$$TripRecommendationImplCopyWith<_$TripRecommendationImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}

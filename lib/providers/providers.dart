@@ -212,6 +212,18 @@ Stream<List<ItineraryNote>> itineraryNotesStream(
   return ref.read(itineraryServiceProvider).watchNotes(itemId);
 }
 
+// ── Stays + Eats recommendations ─────────────────────────────
+// Realtime stream of Scout's hotel + restaurant + best-area picks
+// for a trip. Powered by trip_recommendations + the
+// generate_recommendations Edge Function. Auto-fires after the
+// itinerary is generated, so by the time the user opens the
+// Stays+Eats tab the recs are already there.
+@riverpod
+Stream<List<TripRecommendation>> tripRecommendations(
+    TripRecommendationsRef ref, String tripId) {
+  return ref.read(recommendationsServiceProvider).watch(tripId);
+}
+
 // ─────────────────────────────────────────────────────────────
 //  TRIP CREATION STATE  (local wizard state)
 // ─────────────────────────────────────────────────────────────

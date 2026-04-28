@@ -577,3 +577,36 @@ class MatchProfile with _$MatchProfile {
   factory MatchProfile.fromJson(Map<String, dynamic> json) =>
       _$MatchProfileFromJson(json);
 }
+
+// ── Trip Recommendation (Scout-picked stays + eats) ──────────
+// One row per recommendation in `trip_recommendations`. Three
+// kinds share the same shape: `area` is the "best area to stay"
+// hero, `hotel` and `restaurant` are list items. Linked optionally
+// to `places.id` when there's a community-directory match.
+enum RecommendationKind { area, hotel, restaurant }
+
+@freezed
+class TripRecommendation with _$TripRecommendation {
+  const factory TripRecommendation({
+    required String id,
+    required String tripId,
+    required RecommendationKind kind,
+    required int rank,
+    required String name,
+    String? neighborhood,
+    String? priceBand,        // '$' .. '$$$$'
+    String? cuisine,          // restaurants only
+    @Default([]) List<String> vibeTags,
+    String? reason,           // "why scout picked it" — 1-2 sentences
+    int? dayAnchor,           // nearest itinerary day_number, nullable
+    String? meal,             // breakfast | lunch | dinner | late-night | snack
+    String? imageUrl,
+    String? mapsUrl,          // Google Maps deep link, always populated by Edge Fn
+    String? bookingUrl,       // hotels only — Booking.com search URL
+    String? placeId,
+    DateTime? createdAt,
+  }) = _TripRecommendation;
+
+  factory TripRecommendation.fromJson(Map<String, dynamic> json) =>
+      _$TripRecommendationFromJson(json);
+}

@@ -291,6 +291,25 @@ Deno.serve(async (req) => {
       console.warn("itinerary_ready event insert failed", e);
     }
 
+    // Kick off Stays + Eats recommendations in the background. The
+    // itinerary is the richest context Scout will ever have for this
+    // trip, so we fire generate_recommendations now — by the time
+    // the user opens the Stays+Eats tab, recs are already there.
+    // skip-if-exists guards against double-runs; we don't await.
+    try {
+      const fnUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/generate_recommendations`;
+      fetch(fnUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ trip_id, regenerate: false }),
+      }).catch((e) => console.warn("generate_recommendations kickoff", e));
+    } catch (e) {
+      console.warn("generate_recommendations kickoff failed", e);
+    }
+
     return new Response(
       JSON.stringify({ created: rows.length }),
       { headers: { "Content-Type": "application/json" } },

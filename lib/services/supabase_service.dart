@@ -2263,3 +2263,74 @@ class BlockService {
     return List<Map<String, dynamic>>.from(res as List);
   }
 }
+
+// ─────────────────────────────────────────────────────────────
+//  RECOMMENDATIONS SERVICE — Scout's stays + eats picks for a
+//  trip. Powered by trip_recommendations + the
+//  generate_recommendations Edge Function.
+// ─────────────────────────────────────────────────────────────
+final recommendationsServiceProvider =
+    Provider((ref) => RecommendationsService(ref.read(supabaseProvider)));
+
+class RecommendationsService {
+  RecommendationsService(this._db);
+  final SupabaseClient _db;
+
+  /// Realtime stream of all recommendations for a trip, ordered by
+  /// (kind, rank) so the area row lands first, then hotels, then
+  /// restaurants. The UI groups by kind off this single stream.
+  Stream<List<TripRecommendation>> watch(String tripId) {
+    return _db
+        .from('trip_recommendations')
+        .stream(primaryKey: ['id'])
+        .eq('trip_id', tripId)
+        .map((rows) {
+      final list = rows
+          .map((r) => TripRecommendation.fromJson(snakeToCamel(r)))
+          .toList();
+      // Postgres can return rows in any order on stream updates —
+      // sort client-side so the UI is stable.
+      list.sort((a, b) {
+        final kindOrder = {
+          RecommendationKind.area: 0,
+          RecommendationKind.hotel: 1,
+          RecommendationKind.restaurant: 2,
+        };
+        final kindCmp = kindOrder[a.kind]!.compareTo(kindOrder[b.kind]!);
+        if (kindCmp != 0) return kindCmp;
+        return a.rank.compareTo(b.rank);
+      });
+      return list;
+    });
+  }
+
+  /// One-shot fetch (mainly for non-stream contexts like analytics).
+  Future<List<TripRecommendation>> fetchForTrip(String tripId) async {
+    final rows = await _db
+        .from('trip_recommendations')
+        .select()
+        .eq('trip_id', tripId)
+        .order('kind', ascending: true)
+        .order('rank', ascending: true);
+    return (rows as List)
+        .map((r) => TripRecommendation.fromJson(
+            snakeToCamel(Map<String, dynamic>.from(r as Map))))
+        .toList();
+  }
+
+  /// Trigger Scout to (re)generate stays + eats for a trip. Skip-if-
+  /// exists by default — pass regenerate:true to wipe and refresh.
+  /// The generator is also fired automatically at the end of
+  /// generate_itinerary, so most of the time the user never has to
+  /// call this directly.
+  Future<void> generateForTrip(String tripId,
+      {bool regenerate = false}) async {
+    final res = await _db.functions.invoke(
+      'generate_recommendations',
+      body: {'trip_id': tripId, 'regenerate': regenerate},
+    );
+    if (res.status != 200) {
+      throw Exception(_fnError(res, 'recommendations generation'));
+    }
+  }
+}

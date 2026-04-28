@@ -873,3 +873,58 @@ Map<String, dynamic> _$$MatchProfileImplToJson(_$MatchProfileImpl instance) =>
       'hasWaved': instance.hasWaved,
       'isMatch': instance.isMatch,
     };
+
+_$TripRecommendationImpl _$$TripRecommendationImplFromJson(
+        Map<String, dynamic> json) =>
+    _$TripRecommendationImpl(
+      id: json['id'] as String,
+      tripId: json['tripId'] as String,
+      kind: $enumDecode(_$RecommendationKindEnumMap, json['kind']),
+      rank: (json['rank'] as num).toInt(),
+      name: json['name'] as String,
+      neighborhood: json['neighborhood'] as String?,
+      priceBand: json['priceBand'] as String?,
+      cuisine: json['cuisine'] as String?,
+      vibeTags: (json['vibeTags'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+      reason: json['reason'] as String?,
+      dayAnchor: (json['dayAnchor'] as num?)?.toInt(),
+      meal: json['meal'] as String?,
+      imageUrl: json['imageUrl'] as String?,
+      mapsUrl: json['mapsUrl'] as String?,
+      bookingUrl: json['bookingUrl'] as String?,
+      placeId: json['placeId'] as String?,
+      createdAt: json['createdAt'] == null
+          ? null
+          : DateTime.parse(json['createdAt'] as String),
+    );
+
+Map<String, dynamic> _$$TripRecommendationImplToJson(
+        _$TripRecommendationImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'tripId': instance.tripId,
+      'kind': _$RecommendationKindEnumMap[instance.kind]!,
+      'rank': instance.rank,
+      'name': instance.name,
+      'neighborhood': instance.neighborhood,
+      'priceBand': instance.priceBand,
+      'cuisine': instance.cuisine,
+      'vibeTags': instance.vibeTags,
+      'reason': instance.reason,
+      'dayAnchor': instance.dayAnchor,
+      'meal': instance.meal,
+      'imageUrl': instance.imageUrl,
+      'mapsUrl': instance.mapsUrl,
+      'bookingUrl': instance.bookingUrl,
+      'placeId': instance.placeId,
+      'createdAt': instance.createdAt?.toIso8601String(),
+    };
+
+const _$RecommendationKindEnumMap = {
+  RecommendationKind.area: 'area',
+  RecommendationKind.hotel: 'hotel',
+  RecommendationKind.restaurant: 'restaurant',
+};

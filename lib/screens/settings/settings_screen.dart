@@ -27,10 +27,10 @@ import '../../widgets/weather_chip.dart';
 import '../../widgets/widgets.dart';
 import '../../main.dart' show rootScaffoldMessengerKey;
 
-/// Replace with the real App Store ID once the app is live in
-/// production. Until then, `openStoreListing` will fall back to
-/// the landing page.
-const _appStoreId = '0000000000';
+/// App Store ID for `openStoreListing` — used when StoreKit's
+/// in-app review prompt isn't available (simulator, etc.) so the
+/// user can still leave a review by jumping to the listing.
+const _appStoreId = '6762568582';
 
 /// Full Settings screen. Opened from Profile tab → ⚙️ settings.
 /// Sections: Account · Notifications · App · Support · Legal · Danger.

@@ -2456,7 +2456,9 @@ class BookingService {
 
     // Fan out to the squad chat — same pattern as other "moment"
     // events. Best-effort; don't fail the confirm if the event
-    // insert fails.
+    // insert fails. The fan_out_trip_event trigger creates a
+    // notification per squad member (excluding the actor), and the
+    // existing send_push webhook delivers FCM pushes.
     try {
       await _db.from('trip_events').insert({
         'trip_id': tripId,
@@ -2468,6 +2470,9 @@ class BookingService {
           'title': kind == 'flight'
               ? '✈️ flight locked in'
               : '🏨 accommodation locked in',
+          'body': kind == 'flight'
+              ? "the squad is closer to actually going. tap to see who's left."
+              : "we have a place to sleep. tap to see who's left to book.",
         },
       });
     } catch (_) { /* non-fatal */ }

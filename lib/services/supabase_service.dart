@@ -1432,6 +1432,68 @@ class PlacesService {
     return List<Map<String, dynamic>>.from(rows as List);
   }
 
+  /// Curated guide row from destination_guides — the editorial knowledge
+  /// that powers DestinationHubScreen's hotel/restaurant tabs for the
+  /// 7 hand-curated cities (Lisbon, Tokyo, Paris, Marrakech, Mexico
+  /// City, Cape Town, Medellín). Returns null when no guide exists.
+  ///
+  /// Real-world destination strings come in many shapes:
+  ///   - "🇲🇽 Mexico City"      (UI-formatted with leading flag)
+  ///   - "Mexico City, Mexico"   (city + country)
+  ///   - "Mexico City"           (plain)
+  ///   - "Lisbon, Portugal"
+  ///   - "Tokyo"
+  /// We try, in order: alias contains-match against [normalised],
+  /// slug PK match against [slugify(normalised)], and slug PK match
+  /// against the city portion (text before any comma).
+  Future<Map<String, dynamic>?> fetchDestinationGuide(
+      String destination) async {
+    // Strip leading flag emoji — flags are pairs of regional indicator
+    // codepoints, plus stray BiDi/joiner chars on iOS — by removing
+    // every non-ASCII char from the head until we hit a letter.
+    String stripped = destination;
+    while (stripped.isNotEmpty &&
+        stripped.codeUnitAt(0) > 127) {
+      stripped = stripped.substring(1);
+    }
+    final norm = stripped.toLowerCase().trim();
+    if (norm.isEmpty) return null;
+
+    // Candidate alias strings to try (all lowercase): full normalised,
+    // and the city-only portion before any comma.
+    final cityOnly = norm.split(',').first.trim();
+    final candidates = <String>{norm, cityOnly};
+
+    for (final cand in candidates) {
+      final byAlias = await _db
+          .from('destination_guides')
+          .select()
+          .contains('aliases', [cand])
+          .maybeSingle();
+      if (byAlias != null) {
+        return Map<String, dynamic>.from(byAlias as Map);
+      }
+    }
+
+    // Fallback: try slug match against full norm and city-only.
+    String slug(String s) => s
+        .replaceAll(RegExp(r'[\s,]+'), '-')
+        .replaceAll(RegExp(r'[^a-z0-9-]'), '');
+    for (final cand in candidates) {
+      final s = slug(cand);
+      if (s.isEmpty) continue;
+      final bySlug = await _db
+          .from('destination_guides')
+          .select()
+          .eq('slug', s)
+          .maybeSingle();
+      if (bySlug != null) {
+        return Map<String, dynamic>.from(bySlug as Map);
+      }
+    }
+    return null;
+  }
+
   /// Ratings feed for a place — unions direct place_ratings with ratings
   /// on linked itinerary items, includes voter profile + notes.
   Future<List<Map<String, dynamic>>> fetchPlaceRatingsFeed(

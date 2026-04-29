@@ -125,7 +125,28 @@ class _PlanTabState extends ConsumerState<PlanTab> {
             _TypeFilterRow(
               current: _typeFilter,
               counts: typeCounts,
-              onChange: (t) => setState(() => _typeFilter = t),
+              onChange: (t) {
+                // Hotel/restaurant chips are navigation hooks: they
+                // jump to Stays + Eats with the right pill pre-
+                // selected, since that tab is the canonical home for
+                // those scopes. Other types (all / activity) keep the
+                // local filter behavior.
+                if (t == 'hotel' || t == 'restaurant') {
+                  TSHaptics.light();
+                  ref.read(staysEatsScopeProvider.notifier).state =
+                      t == 'hotel'
+                          ? StaysEatsScope.stays
+                          : StaysEatsScope.eats;
+                  final prev = ref.read(tripSpaceJumpProvider);
+                  ref.read(tripSpaceJumpProvider.notifier).state =
+                      TripSpaceJumpRequest(
+                    tabKey: 'stays',
+                    seq: (prev?.seq ?? 0) + 1,
+                  );
+                  return;
+                }
+                setState(() => _typeFilter = t);
+              },
             ),
             const SizedBox(height: 16),
             if (dayNumbers.isEmpty)
@@ -1017,16 +1038,16 @@ class _TypeFilterRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final total = counts.values.fold<int>(0, (a, b) => a + b);
+    // Plan tab's filter row used to include hotel/restaurant chips,
+    // but now that Stays + Eats is its own surface with stays/eats
+    // pills, the chips were redundant. The Plan tab filters
+    // activities only.
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(children: [
         _chip('all', '✨', total),
         const SizedBox(width: 6),
         _chip('activity', '📍', counts['activity'] ?? 0),
-        const SizedBox(width: 6),
-        _chip('hotel', '🛏️', counts['hotel'] ?? 0),
-        const SizedBox(width: 6),
-        _chip('restaurant', '🍽️', counts['restaurant'] ?? 0),
       ]),
     );
   }

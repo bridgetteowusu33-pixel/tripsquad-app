@@ -328,6 +328,15 @@ class _TripSpaceInnerState extends ConsumerState<_TripSpaceInner>
     _rebuildControllerIfNeeded(phase);
     final tabDefs = _tabsFor(phase, widget.trip.mode);
 
+    // Listen for cross-tab navigation requests (e.g. Plan tab's hotel
+    // chip jumping to Stays + Eats). Each new request bumps `seq`
+    // so we always switch even when the same tab is requested twice.
+    ref.listen<TripSpaceJumpRequest?>(tripSpaceJumpProvider, (prev, next) {
+      if (next == null || next == prev) return;
+      final idx = tabDefs.indexWhere((d) => d.key == next.tabKey);
+      if (idx >= 0 && _tabs != null) _tabs!.animateTo(idx);
+    });
+
     // Re-watch auth state so host-only affordances (rename pencil,
     // date editor) recompute when a user signs in/out mid-screen.
     // Without this watch, _TripSpaceInner only rebuilt on trip

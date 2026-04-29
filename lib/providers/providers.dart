@@ -224,6 +224,31 @@ Stream<List<TripRecommendation>> tripRecommendations(
   return ref.read(recommendationsServiceProvider).watch(tripId);
 }
 
+// ── Stays + Eats: active pill scope ──────────────────────────
+// Which sub-pill (stays | eats) is selected inside the Stays + Eats
+// tab. Lifted to a provider so other tabs can pre-select it before
+// switching tabs (e.g. tapping the "hotel" chip in Plan jumps to
+// stays + eats with stays already focused).
+enum StaysEatsScope { stays, eats }
+
+final staysEatsScopeProvider =
+    StateProvider<StaysEatsScope>((ref) => StaysEatsScope.stays);
+
+// ── Trip-space tab-jump request ──────────────────────────────
+// One-shot signal used to ask Trip Space to switch its top-level
+// tab from inside a child tab. The seq field guarantees each new
+// dispatch fires a listener, even when tabKey is the same as
+// before. Listened to by trip_space_screen.dart in initState +
+// didChangeDependencies via ref.listen.
+class TripSpaceJumpRequest {
+  final String tabKey;
+  final int seq;
+  const TripSpaceJumpRequest({required this.tabKey, required this.seq});
+}
+
+final tripSpaceJumpProvider =
+    StateProvider<TripSpaceJumpRequest?>((ref) => null);
+
 // ─────────────────────────────────────────────────────────────
 //  TRIP CREATION STATE  (local wizard state)
 // ─────────────────────────────────────────────────────────────
@@ -359,6 +384,24 @@ class AIGeneration extends _$AIGeneration {
     try {
       await ref
           .read(packingServiceProvider)
+          .generateForTrip(tripId, regenerate: regenerate);
+      state = AIGenState(
+          status: AIGenStatus.success, options: state.options);
+    } catch (e) {
+      state = AIGenState(
+        status: AIGenStatus.error,
+        options: state.options,
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
+  Future<void> generateRecommendations(String tripId,
+      {bool regenerate = false}) async {
+    state = AIGenState(status: AIGenStatus.loading, options: state.options);
+    try {
+      await ref
+          .read(recommendationsServiceProvider)
           .generateForTrip(tripId, regenerate: regenerate);
       state = AIGenState(
           status: AIGenStatus.success, options: state.options);

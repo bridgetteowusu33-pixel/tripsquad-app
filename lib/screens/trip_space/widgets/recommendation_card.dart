@@ -22,41 +22,33 @@ class RecommendationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image header — full-width, fixed aspect.
-          if (rec.imageUrl != null)
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(14),
-                topRight: Radius.circular(14),
-              ),
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: CachedNetworkImage(
-                  imageUrl: rec.imageUrl!,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(color: TSColors.s2),
-                  errorWidget: (_, __, ___) => Container(color: TSColors.s2),
-                ),
-              ),
-            )
-          else
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(14),
-                topRight: Radius.circular(14),
-              ),
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: Container(
-                  color: TSColors.s2,
-                  alignment: Alignment.center,
-                  child: Text(
-                    _isHotel ? '🛏️' : '🍽️',
-                    style: const TextStyle(fontSize: 48),
-                  ),
-                ),
-              ),
+          // Image header — full-width, fixed aspect. When Unsplash
+          // doesn't have a relevant photo for the specific place, we
+          // show a designed gradient placeholder instead of an
+          // unrelated city skyline. Topical kind emoji + the
+          // neighborhood label tells the user what they're looking at.
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(14),
+              topRight: Radius.circular(14),
             ),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: rec.imageUrl != null
+                  ? CachedNetworkImage(
+                      imageUrl: rec.imageUrl!,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) =>
+                          _GradientPlaceholder(isHotel: _isHotel),
+                      errorWidget: (_, __, ___) =>
+                          _GradientPlaceholder(isHotel: _isHotel),
+                    )
+                  : _GradientPlaceholder(
+                      isHotel: _isHotel,
+                      label: rec.neighborhood,
+                    ),
+            ),
+          ),
 
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
@@ -169,6 +161,56 @@ class RecommendationCard extends StatelessWidget {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+}
+
+/// Designed placeholder shown when no photo is available. A subtle
+/// gradient + the kind emoji + an optional neighborhood label. Beats
+/// a flat gray box AND beats a misleading city-skyline stock photo.
+class _GradientPlaceholder extends StatelessWidget {
+  const _GradientPlaceholder({required this.isHotel, this.label});
+  final bool isHotel;
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isHotel
+              ? [
+                  TSColors.lime.withValues(alpha: 0.10),
+                  TSColors.s2,
+                ]
+              : [
+                  const Color(0xFFFFB800).withValues(alpha: 0.12),
+                  TSColors.s2,
+                ],
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            isHotel ? '🛏️' : '🍽️',
+            style: const TextStyle(fontSize: 44),
+          ),
+          if (label != null && label!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              label!,
+              style: TSTextStyles.label(color: TSColors.text2, size: 11),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 

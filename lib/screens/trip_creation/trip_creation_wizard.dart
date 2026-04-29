@@ -551,6 +551,12 @@ class _StepDestinations extends ConsumerStatefulWidget {
 class _StepDestinationsState extends ConsumerState<_StepDestinations> {
   final _ctrl = TextEditingController();
 
+  /// Group-mode only: when a user taps a country chip, the Quick Add
+  /// row below filters to that country's cities so the squad can build
+  /// a city-level shortlist for voting (Tokyo / Osaka / Kyoto rather
+  /// than just "Japan"). Null = no filter, show curated 13.
+  String? _focusedCountry;
+
   void _add(String dest) {
     if (dest.trim().isEmpty) return;
     final mode = ref.read(tripCreationProvider).mode;
@@ -577,11 +583,11 @@ class _StepDestinationsState extends ConsumerState<_StepDestinations> {
     ref.read(tripCreationProvider.notifier).setDestinations(dests);
   }
 
-  // v1.1 — country chips only shown on solo trips. Surfaces the
-  // "you can do a whole country, not just a city" affordance
-  // without adding noise for group flows (where the user is
-  // building a city-level shortlist for voting).
-  static const _soloCountries = [
+  // v1.1 — country chips. Solo: tap a country to make it the trip
+  // destination (whole-country mode). Group: tap a country to filter
+  // the Quick Add row below to that country's cities, so the squad
+  // builds a city-level shortlist for voting.
+  static const _countries = [
     ('🇯🇵', 'Japan'),
     ('🇮🇹', 'Italy'),
     ('🇵🇹', 'Portugal'),
@@ -625,52 +631,73 @@ class _StepDestinationsState extends ConsumerState<_StepDestinations> {
 
         const SizedBox(height: 20),
 
-        // v1.1 — solo trips also get a country chip row above the
-        // cities so "do the whole country" is a one-tap option.
-        if (state.mode == TripMode.solo) ...[
-          const SectionLabel(label: 'Whole country'),
-          Wrap(spacing: 8, runSpacing: 8,
-            children: _soloCountries.map((c) {
-              final label = '${c.$1} ${c.$2}';
-              final selected = state.destinations.contains(label);
-              return GestureDetector(
-                onTap: () => _add(label),
-                child: AnimatedContainer(
-                  duration: 150.ms,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
+        // Country chip row. Solo: each tap makes that country the
+        // trip's whole-country destination. Group: each tap focuses
+        // the Quick Add row below on that country's cities so the
+        // squad can build a city-level shortlist (Tokyo / Osaka /
+        // Kyoto rather than "Japan").
+        SectionLabel(
+          label: state.mode == TripMode.solo
+              ? 'Whole country'
+              : 'Pick a country',
+        ),
+        Wrap(spacing: 8, runSpacing: 8,
+          children: _countries.map((c) {
+            final label = '${c.$1} ${c.$2}';
+            final isSolo = state.mode == TripMode.solo;
+            final selected = isSolo
+                ? state.destinations.contains(label)
+                : _focusedCountry == c.$2.toLowerCase();
+            return GestureDetector(
+              onTap: () {
+                if (isSolo) {
+                  _add(label);
+                } else {
+                  setState(() {
+                    final key = c.$2.toLowerCase();
+                    _focusedCountry =
+                        _focusedCountry == key ? null : key;
+                  });
+                }
+              },
+              child: AnimatedContainer(
+                duration: 150.ms,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? TSColors.limeDim(0.12)
+                      : TSColors.s2,
+                  borderRadius: TSRadius.full,
+                  border: Border.all(
                     color: selected
-                        ? TSColors.limeDim(0.12)
-                        : TSColors.s2,
-                    borderRadius: TSRadius.full,
-                    border: Border.all(
-                      color: selected
-                          ? TSColors.limeDim(0.35)
-                          : TSColors.border,
-                    ),
-                  ),
-                  child: Text(label,
-                    style: TSTextStyles.body(
-                      size: 12,
-                      color: selected ? TSColors.lime : TSColors.text2,
-                      weight: selected
-                          ? FontWeight.w600
-                          : FontWeight.w400,
-                    ),
+                        ? TSColors.limeDim(0.35)
+                        : TSColors.border,
                   ),
                 ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 16),
-        ],
+                child: Text(label,
+                  style: TSTextStyles.body(
+                    size: 12,
+                    color: selected ? TSColors.lime : TSColors.text2,
+                    weight: selected
+                        ? FontWeight.w600
+                        : FontWeight.w400,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 16),
 
-        // Quick add chips — smart: if the trip name matches a country
-        // or region, surface cities in that place; otherwise fall back
-        // to the curated 13.
+        // Quick add chips — smart: if a country chip is focused, show
+        // that country's cities. Otherwise fall back to trip-name
+        // matching (which itself falls back to the curated 13).
         () {
-          final suggestion = TSQuickDestinations.suggestFor(state.name);
+          final suggestion = state.mode != TripMode.solo &&
+                  _focusedCountry != null
+              ? TSQuickDestinations.suggestFor(_focusedCountry!)
+              : TSQuickDestinations.suggestFor(state.name);
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

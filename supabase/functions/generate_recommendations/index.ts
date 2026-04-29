@@ -9,9 +9,27 @@ import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 
 const anthropic = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY")! });
 const UNSPLASH_KEY = Deno.env.get("UNSPLASH_ACCESS_KEY"); // optional
+// Google Places API (New) — used as the *primary* photo source for
+// hotel/restaurant cards. Real photos of the actual business uploaded
+// by users + owners on Google Maps. Falls back to Unsplash + gradient
+// placeholder. ~$0.039 per place lookup (text search + photo media)
+// with a $200/mo free tier from Google.
+const GOOGLE_PLACES_KEY = Deno.env.get("GOOGLE_PLACES_API_KEY");
 
 function normalizeQuery(q: string): string {
   return q.toLowerCase().trim().replace(/\s+/g, " ");
+}
+
+// Strip leading flag emoji and other non-ASCII prefix from a
+// destination string. Unsplash search returns nothing for queries
+// like "🇲🇽 Mexico City" — the emoji bytes URL-encode oddly. Doing
+// this on every photo query so we get actual photos back.
+function stripLeadingNonAscii(s: string): string {
+  let out = s;
+  while (out.length > 0 && out.charCodeAt(0) > 127) {
+    out = out.slice(1);
+  }
+  return out.trim();
 }
 
 // JSON recovery — same strategies as generate_itinerary.
@@ -65,6 +83,114 @@ async function photoFor(
   }
 }
 
+// Try a list of queries in order, returning the first non-null result.
+// Used to gracefully degrade from specific (e.g. "Condesa Mexico City
+// hotel") to broad (e.g. "Mexico City") when Unsplash has no match
+// for the more specific phrasing. Most cities will have *some* photo
+// at the broadest fallback.
+async function photoForWithFallback(
+  supabase: SupabaseClient,
+  candidates: string[],
+): Promise<string | null> {
+  for (const q of candidates) {
+    if (!q || q.trim().length < 2) continue;
+    const found = await photoFor(supabase, q);
+    if (found) return found;
+  }
+  return null;
+}
+
+/// Google Places API (New) — fetch a real photo of a specific
+/// business. One text-search + one photo-media call per lookup.
+/// Cached in photo_cache with a `gp:` prefix so the cache key
+/// space doesn't collide with Unsplash entries.
+async function googlePlacePhoto(
+  supabase: SupabaseClient,
+  rawQuery: string,
+): Promise<string | null> {
+  if (!GOOGLE_PLACES_KEY) return null;
+  const norm = normalizeQuery(rawQuery);
+  if (norm.length < 2) return null;
+  const cacheKey = `gp:${norm}`;
+
+  const { data: cached } = await supabase
+    .from("photo_cache")
+    .select("url")
+    .eq("query", cacheKey)
+    .maybeSingle();
+  if (cached) return (cached.url as string | null) ?? null;
+
+  try {
+    // Text Search returns up to 1 result with the place id + photo refs.
+    // FieldMask is required by the new API — omit it and the call fails.
+    const searchRes = await fetch(
+      "https://places.googleapis.com/v1/places:searchText",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": GOOGLE_PLACES_KEY,
+          "X-Goog-FieldMask": "places.id,places.photos",
+        },
+        body: JSON.stringify({ textQuery: rawQuery, pageSize: 1 }),
+      },
+    );
+    if (!searchRes.ok) {
+      console.warn("places searchText", searchRes.status, rawQuery);
+      // Cache null so we don't retry indefinitely on quota issues.
+      await supabase.from("photo_cache")
+        .upsert({ query: cacheKey, url: null });
+      return null;
+    }
+    const searchData = await searchRes.json();
+    const photoName: string | undefined =
+      searchData?.places?.[0]?.photos?.[0]?.name;
+    if (!photoName) {
+      await supabase.from("photo_cache")
+        .upsert({ query: cacheKey, url: null });
+      return null;
+    }
+
+    // Photo Media with skipHttpRedirect=true returns the resolved
+    // googleusercontent.com URL as JSON. That URL is publicly
+    // cacheable for the photo's lifetime — clients fetch it
+    // directly without our API key.
+    const photoUrl =
+      `https://places.googleapis.com/v1/${photoName}/media` +
+      `?maxWidthPx=800&skipHttpRedirect=true&key=${GOOGLE_PLACES_KEY}`;
+    const photoRes = await fetch(photoUrl);
+    if (!photoRes.ok) {
+      console.warn("places photo media", photoRes.status, photoName);
+      await supabase.from("photo_cache")
+        .upsert({ query: cacheKey, url: null });
+      return null;
+    }
+    const photoData = await photoRes.json();
+    const photoUri: string | null = photoData?.photoUri ?? null;
+    await supabase.from("photo_cache")
+      .upsert({ query: cacheKey, url: photoUri });
+    return photoUri;
+  } catch (e) {
+    console.warn("google places photo error", e);
+    return null;
+  }
+}
+
+/// Composite photo fetch: try Google Places (real photo of the
+/// specific business) first, then fall back to topical Unsplash
+/// queries, then null (UI renders a gradient placeholder).
+async function photoForRec(
+  supabase: SupabaseClient,
+  googleQuery: string | null,
+  unsplashCandidates: string[],
+): Promise<string | null> {
+  if (googleQuery && googleQuery.trim().length > 1) {
+    const found = await googlePlacePhoto(supabase, googleQuery);
+    if (found) return found;
+  }
+  return await photoForWithFallback(supabase, unsplashCandidates);
+}
+
 async function mapWithLimit<T, R>(
   items: T[],
   limit: number,
@@ -97,30 +223,47 @@ function bookingUrlFor(name: string, destination: string): string {
 }
 
 // Resolve the trip's selected_destination against destination_guides.
-// Match by slug-like normalization OR by aliases array. Returns the
-// full guide row (jsonb included) or null if no match.
+// Real-world destinations come as "🇲🇽 Mexico City", "Mexico City,
+// Mexico", or plain "Mexico City". We strip leading flag emoji, then
+// try aliases-contains and slug PK against full + city-only forms.
 async function findGuideSeed(
   supabase: SupabaseClient,
   destination: string,
 ): Promise<Record<string, unknown> | null> {
-  const norm = destination.toLowerCase().trim();
-  const slug = norm.replace(/[\s,]+/g, "-").replace(/[^a-z0-9-]/g, "");
+  // Strip non-ASCII prefix (flag emojis, joiners) until we hit a
+  // letter.
+  let stripped = destination;
+  while (stripped.length > 0 && stripped.charCodeAt(0) > 127) {
+    stripped = stripped.slice(1);
+  }
+  const norm = stripped.toLowerCase().trim();
+  if (!norm) return null;
 
-  // Try slug first (cheap PK lookup).
-  const { data: bySlug } = await supabase
-    .from("destination_guides")
-    .select("*")
-    .eq("slug", slug)
-    .maybeSingle();
-  if (bySlug) return bySlug;
+  const cityOnly = norm.split(",")[0].trim();
+  const candidates = Array.from(new Set([norm, cityOnly]));
 
-  // Fall back to aliases array contains.
-  const { data: byAlias } = await supabase
-    .from("destination_guides")
-    .select("*")
-    .contains("aliases", [norm])
-    .maybeSingle();
-  return byAlias ?? null;
+  for (const cand of candidates) {
+    const { data: byAlias } = await supabase
+      .from("destination_guides")
+      .select("*")
+      .contains("aliases", [cand])
+      .maybeSingle();
+    if (byAlias) return byAlias;
+  }
+
+  const slug = (s: string) =>
+    s.replace(/[\s,]+/g, "-").replace(/[^a-z0-9-]/g, "");
+  for (const cand of candidates) {
+    const s = slug(cand);
+    if (!s) continue;
+    const { data: bySlug } = await supabase
+      .from("destination_guides")
+      .select("*")
+      .eq("slug", s)
+      .maybeSingle();
+    if (bySlug) return bySlug;
+  }
+  return null;
 }
 
 function summarizeItinerary(items: any[]): string {
@@ -247,16 +390,59 @@ Deno.serve(async (req) => {
         .delete().eq("trip_id", trip_id);
     }
 
-    // Build rows + collect photo queries to fetch in parallel.
+    // Photo strategy per card:
+    //  1. Google Places API: text search "{name} {destClean}" for a
+    //     real photo of the specific business (hotels, restaurants).
+    //     Areas (which are neighborhoods, not businesses) skip Google.
+    //  2. Topical Unsplash fallback when Places returns nothing.
+    //  3. Designed gradient placeholder client-side when both fail.
     const rows: Record<string, unknown>[] = [];
-    const queryByKey = new Map<string, string>();
+    type Plan = { google: string | null; unsplash: string[] };
+    const plansByKey = new Map<string, Plan>();
+    const dest = trip.selected_destination;
+    const destClean = stripLeadingNonAscii(dest);
+
+    // Photo query strategy: prefer specific neighborhood matches
+    // (Unsplash has some), fall back to cuisine/type-themed photos
+    // ONLY when they're still topical to the card. Drop the
+    // generic-city fallbacks (skyline, street, dest-only) — those
+    // produce "unrelated photo" UX. Cards with no photo render as a
+    // designed gradient placeholder; better than mismatched stock.
+    function areaQueries(name: string): string[] {
+      // Neighborhood photos are sometimes on Unsplash. If not, no fallback.
+      return [`${name} ${destClean}`.trim()];
+    }
+    function hotelQueries(neighborhood: string | null): string[] {
+      const out: string[] = [];
+      if (neighborhood) out.push(`${neighborhood} ${destClean} hotel`);
+      // No city-only fallback — would return a skyline that doesn't
+      // represent the hotel. Empty card > misleading photo.
+      return out;
+    }
+    function restaurantQueries(
+      cuisine: string | null,
+      neighborhood: string | null,
+    ): string[] {
+      const out: string[] = [];
+      // Cuisine photos are abundant and TOPICAL — a taco photo on a
+      // taco restaurant card is fine even if it's not the actual
+      // restaurant. Keep these.
+      if (cuisine) out.push(`${cuisine} food ${destClean}`);
+      if (cuisine) out.push(`${cuisine} food`);
+      if (neighborhood) out.push(`${neighborhood} ${destClean} restaurant`);
+      // No city-only fallback (avoid unrelated city food shots).
+      return out;
+    }
 
     // Area row (kind='area'), rank 0.
     if (parsed.area && parsed.area.name) {
       const key = `area:0`;
-      const photoQuery = parsed.area.image_query
-        ?? `${parsed.area.name} ${trip.selected_destination}`;
-      queryByKey.set(key, photoQuery);
+      plansByKey.set(key, {
+        // Areas are neighborhoods, not single businesses — Places
+        // search rarely returns a useful photo. Stick to Unsplash.
+        google: null,
+        unsplash: areaQueries(parsed.area.name),
+      });
       rows.push({
         trip_id,
         kind: "area",
@@ -265,7 +451,7 @@ Deno.serve(async (req) => {
         neighborhood: parsed.area.name,
         reason: parsed.area.reason ?? null,
         vibe_tags: parsed.area.vibe_tags ?? [],
-        maps_url: mapsUrlFor(parsed.area.name, trip.selected_destination),
+        maps_url: mapsUrlFor(parsed.area.name, dest),
       });
     }
 
@@ -274,8 +460,10 @@ Deno.serve(async (req) => {
       const h = hotels[i];
       if (!h?.name) continue;
       const key = `hotel:${i}`;
-      const photoQuery = h.image_query ?? `${h.name} ${trip.selected_destination}`;
-      queryByKey.set(key, photoQuery);
+      plansByKey.set(key, {
+        google: `${h.name} ${destClean}`.trim(),
+        unsplash: hotelQueries(h.neighborhood ?? null),
+      });
       rows.push({
         trip_id,
         kind: "hotel",
@@ -286,8 +474,8 @@ Deno.serve(async (req) => {
         vibe_tags: h.vibe_tags ?? [],
         reason: h.reason ?? null,
         day_anchor: typeof h.day_anchor === "number" ? h.day_anchor : null,
-        maps_url: mapsUrlFor(h.name, trip.selected_destination),
-        booking_url: bookingUrlFor(h.name, trip.selected_destination),
+        maps_url: mapsUrlFor(h.name, dest),
+        booking_url: bookingUrlFor(h.name, dest),
       });
     }
 
@@ -296,8 +484,10 @@ Deno.serve(async (req) => {
       const r = restaurants[i];
       if (!r?.name) continue;
       const key = `restaurant:${i}`;
-      const photoQuery = r.image_query ?? `${r.name} ${trip.selected_destination}`;
-      queryByKey.set(key, photoQuery);
+      plansByKey.set(key, {
+        google: `${r.name} ${destClean}`.trim(),
+        unsplash: restaurantQueries(r.cuisine ?? null, r.neighborhood ?? null),
+      });
       rows.push({
         trip_id,
         kind: "restaurant",
@@ -310,19 +500,21 @@ Deno.serve(async (req) => {
         vibe_tags: r.vibe_tags ?? [],
         reason: r.reason ?? null,
         day_anchor: typeof r.day_anchor === "number" ? r.day_anchor : null,
-        maps_url: mapsUrlFor(r.name, trip.selected_destination),
+        maps_url: mapsUrlFor(r.name, dest),
       });
     }
 
-    // Fetch images in parallel (concurrency 3 — same as generate_itinerary).
-    const queryEntries = Array.from(queryByKey.entries());
+    // Fetch images in parallel (concurrency 3). Each plan tries
+    // Google Places first, then Unsplash fallbacks. Null means
+    // "render the gradient placeholder client-side".
+    const planEntries = Array.from(plansByKey.entries());
     const photoUrls = await mapWithLimit(
-      queryEntries.map(([_, q]) => q),
+      planEntries.map(([_, p]) => p),
       3,
-      (q) => photoFor(supabase, q),
+      (p) => photoForRec(supabase, p.google, p.unsplash),
     );
     const photoByKey = new Map<string, string | null>();
-    queryEntries.forEach(([key, _], i) => photoByKey.set(key, photoUrls[i]));
+    planEntries.forEach(([key, _], i) => photoByKey.set(key, photoUrls[i]));
 
     // Stitch image_url onto each row by reconstructing its key.
     let areaRowIdx = 0, hotelIdx = 0, restaurantIdx = 0;

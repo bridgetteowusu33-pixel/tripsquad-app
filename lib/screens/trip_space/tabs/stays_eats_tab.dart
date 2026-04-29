@@ -6,8 +6,6 @@ import '../../../core/haptics.dart';
 import '../../../core/theme.dart';
 import '../../../models/models.dart';
 import '../../../providers/providers.dart';
-import '../../../services/supabase_service.dart';
-import '../../../widgets/widgets.dart';
 import '../widgets/area_hero_card.dart';
 import '../widgets/recommendation_card.dart';
 
@@ -25,6 +23,30 @@ class StaysEatsTab extends ConsumerStatefulWidget {
 
 class _StaysEatsTabState extends ConsumerState<StaysEatsTab> {
   bool _regenerating = false;
+  bool _autoKickedOff = false;
+
+  /// Auto-trigger generation when the tab opens with no recs but the
+  /// itinerary is already in place. Routes through aIGenerationProvider
+  /// so the persistent "scout's cooking" banner at the top of trip
+  /// space shows during gen — same UX as Plan / Pack tabs. The Edge
+  /// Function's skip-if-exists guard means this is safe even when
+  /// generate_itinerary already fired the kickoff in the background.
+  Future<void> _autoTriggerIfNeeded() async {
+    if (_autoKickedOff || _regenerating) return;
+    _autoKickedOff = true;
+    if (mounted) setState(() => _regenerating = true);
+    try {
+      await ref
+          .read(aIGenerationProvider.notifier)
+          .generateRecommendations(widget.trip.id);
+    } catch (_) {
+      // Swallow auto-kickoff errors so we don't surface a confusing
+      // banner when the user didn't ask for anything. The error UI
+      // surfaces naturally if the user later pull-to-refreshes.
+    } finally {
+      if (mounted) setState(() => _regenerating = false);
+    }
+  }
 
   Future<void> _refresh() async {
     if (_regenerating) return;
@@ -32,8 +54,12 @@ class _StaysEatsTabState extends ConsumerState<StaysEatsTab> {
     TSHaptics.light();
     try {
       await ref
-          .read(recommendationsServiceProvider)
-          .generateForTrip(widget.trip.id, regenerate: true);
+          .read(aIGenerationProvider.notifier)
+          .generateRecommendations(widget.trip.id, regenerate: true);
+      final genState = ref.read(aIGenerationProvider);
+      if (genState.status == AIGenStatus.error) {
+        throw Exception(genState.errorMessage ?? 'regeneration failed');
+      }
       TSHaptics.success();
     } catch (e) {
       if (mounted) {
@@ -52,8 +78,12 @@ class _StaysEatsTabState extends ConsumerState<StaysEatsTab> {
     TSHaptics.ctaTap();
     try {
       await ref
-          .read(recommendationsServiceProvider)
-          .generateForTrip(widget.trip.id);
+          .read(aIGenerationProvider.notifier)
+          .generateRecommendations(widget.trip.id);
+      final genState = ref.read(aIGenerationProvider);
+      if (genState.status == AIGenStatus.error) {
+        throw Exception(genState.errorMessage ?? 'generation failed');
+      }
       TSHaptics.success();
     } catch (e) {
       if (mounted) {
@@ -90,6 +120,26 @@ class _StaysEatsTabState extends ConsumerState<StaysEatsTab> {
       ),
       data: (recs) {
         if (recs.isEmpty) {
+          // Reveal+itinerary phases imply gen is in flight (auto-fired
+          // by generate_itinerary). Auto-trigger defensively (skip-if-
+          // exists protects from double-call) and show the loading
+          // state so users don't stare at a dead CTA. Pre-reveal is
+          // already handled above so we know we have a destination.
+          if (_regenerating) {
+            return const _LoadingState();
+          }
+          final s = widget.trip.status;
+          final hasItineraryPhase = s == TripStatus.revealed ||
+              s == TripStatus.planning ||
+              s == TripStatus.live;
+          if (hasItineraryPhase) {
+            // Schedule a kickoff after build — calling setState in
+            // build is illegal.
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _autoTriggerIfNeeded();
+            });
+            return const _LoadingState();
+          }
           return _NotYetGenerated(
             onTap: _generateFirstTime,
             generating: _regenerating,
@@ -103,6 +153,8 @@ class _StaysEatsTabState extends ConsumerState<StaysEatsTab> {
             recs.where((r) => r.kind == RecommendationKind.hotel).toList();
         final restaurants =
             recs.where((r) => r.kind == RecommendationKind.restaurant).toList();
+        final scope = ref.watch(staysEatsScopeProvider);
+        final showStays = scope == StaysEatsScope.stays;
 
         return RefreshIndicator(
           color: TSColors.lime,
@@ -111,45 +163,53 @@ class _StaysEatsTabState extends ConsumerState<StaysEatsTab> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
             children: [
-              if (area != null) ...[
-                AreaHeroCard(area: area)
-                    .animate()
-                    .fadeIn(duration: 250.ms)
-                    .slideY(begin: 0.04, end: 0),
-                const SizedBox(height: 24),
-              ],
+              // Pill toggle: stays | eats. Lifts to a Riverpod
+              // provider so other tabs can pre-select before jumping
+              // here (e.g. Plan tab's hotel chip → stays).
+              _PillToggle(
+                scope: scope,
+                staysCount: hotels.length,
+                eatsCount: restaurants.length,
+                onChange: (s) =>
+                    ref.read(staysEatsScopeProvider.notifier).state = s,
+                refreshing: _regenerating,
+                onRefresh: _refresh,
+              ),
+              const SizedBox(height: 16),
 
-              if (hotels.isNotEmpty) ...[
-                _SectionHeader(
-                  label: 'stays',
-                  count: hotels.length,
-                  trailing: _RefreshChip(
-                    onTap: _refresh,
-                    refreshing: _regenerating,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                for (var i = 0; i < hotels.length; i++) ...[
-                  RecommendationCard(rec: hotels[i])
+              if (showStays) ...[
+                if (area != null) ...[
+                  AreaHeroCard(area: area)
                       .animate()
-                      .fadeIn(delay: (i * 40).ms),
-                  const SizedBox(height: 12),
+                      .fadeIn(duration: 250.ms)
+                      .slideY(begin: 0.04, end: 0),
+                  const SizedBox(height: 20),
                 ],
-                const SizedBox(height: 16),
-              ],
-
-              if (restaurants.isNotEmpty) ...[
-                _SectionHeader(
-                  label: 'eats',
-                  count: restaurants.length,
-                ),
-                const SizedBox(height: 12),
-                for (var i = 0; i < restaurants.length; i++) ...[
-                  RecommendationCard(rec: restaurants[i])
-                      .animate()
-                      .fadeIn(delay: (i * 35).ms),
-                  const SizedBox(height: 12),
-                ],
+                if (hotels.isEmpty)
+                  _NoneInScope(
+                    label: 'no stays picked yet',
+                    body: 'pull down to ask scout',
+                  )
+                else
+                  for (var i = 0; i < hotels.length; i++) ...[
+                    RecommendationCard(rec: hotels[i])
+                        .animate()
+                        .fadeIn(delay: (i * 40).ms),
+                    const SizedBox(height: 12),
+                  ],
+              ] else ...[
+                if (restaurants.isEmpty)
+                  _NoneInScope(
+                    label: 'no eats picked yet',
+                    body: 'pull down to ask scout',
+                  )
+                else
+                  for (var i = 0; i < restaurants.length; i++) ...[
+                    RecommendationCard(rec: restaurants[i])
+                        .animate()
+                        .fadeIn(delay: (i * 35).ms),
+                    const SizedBox(height: 12),
+                  ],
               ],
 
               const SizedBox(height: 24),
@@ -167,32 +227,125 @@ class _StaysEatsTabState extends ConsumerState<StaysEatsTab> {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.label,
-    required this.count,
-    this.trailing,
+class _PillToggle extends StatelessWidget {
+  const _PillToggle({
+    required this.scope,
+    required this.staysCount,
+    required this.eatsCount,
+    required this.onChange,
+    required this.refreshing,
+    required this.onRefresh,
   });
-  final String label;
-  final int count;
-  final Widget? trailing;
+  final StaysEatsScope scope;
+  final int staysCount;
+  final int eatsCount;
+  final ValueChanged<StaysEatsScope> onChange;
+  final bool refreshing;
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(
-          label,
-          style: TSTextStyles.heading(size: 20),
+        _Pill(
+          label: 'stays',
+          emoji: '🛏️',
+          count: staysCount,
+          selected: scope == StaysEatsScope.stays,
+          onTap: () {
+            TSHaptics.light();
+            onChange(StaysEatsScope.stays);
+          },
         ),
         const SizedBox(width: 8),
-        Text(
-          '· $count',
-          style: TSTextStyles.caption(color: TSColors.muted),
+        _Pill(
+          label: 'eats',
+          emoji: '🍽️',
+          count: eatsCount,
+          selected: scope == StaysEatsScope.eats,
+          onTap: () {
+            TSHaptics.light();
+            onChange(StaysEatsScope.eats);
+          },
         ),
         const Spacer(),
-        if (trailing != null) trailing!,
+        _RefreshChip(onTap: onRefresh, refreshing: refreshing),
       ],
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  const _Pill({
+    required this.label,
+    required this.emoji,
+    required this.count,
+    required this.selected,
+    required this.onTap,
+  });
+  final String label;
+  final String emoji;
+  final int count;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? TSColors.limeDim(0.14) : TSColors.s2,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? TSColors.lime : TSColors.border,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 14)),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TSTextStyles.label(
+                color: selected ? TSColors.lime : TSColors.text,
+                size: 13,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text('$count',
+                style: TSTextStyles.caption(color: TSColors.muted)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NoneInScope extends StatelessWidget {
+  const _NoneInScope({required this.label, required this.body});
+  final String label;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(label,
+              style: TSTextStyles.body(color: TSColors.text2)),
+          const SizedBox(height: 4),
+          Text(body,
+              style: TSTextStyles.caption(color: TSColors.muted)),
+        ],
+      ),
     );
   }
 }

@@ -1933,7 +1933,7 @@ final tripCreationProvider =
 );
 
 typedef _$TripCreation = AutoDisposeNotifier<TripCreationState>;
-String _$aIGenerationHash() => r'9aabfc6beb1f9c2d2654a9e8f8705f71b1635151';
+String _$aIGenerationHash() => r'336981f56cca7bb2f14cda59c7ba7190c12ae2ff';
 
 /// See also [AIGeneration].
 @ProviderFor(AIGeneration)

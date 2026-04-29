@@ -21,25 +21,17 @@ class AreaHeroCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (area.imageUrl != null)
-              AspectRatio(
-                aspectRatio: 16 / 9,
-                child: CachedNetworkImage(
-                  imageUrl: area.imageUrl!,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(color: TSColors.s2),
-                  errorWidget: (_, __, ___) => Container(color: TSColors.s2),
-                ),
-              )
-            else
-              AspectRatio(
-                aspectRatio: 16 / 9,
-                child: Container(
-                  color: TSColors.s2,
-                  alignment: Alignment.center,
-                  child: const Text('🏘️', style: TextStyle(fontSize: 56)),
-                ),
-              ),
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: area.imageUrl != null
+                  ? CachedNetworkImage(
+                      imageUrl: area.imageUrl!,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => _areaGradient(),
+                      errorWidget: (_, __, ___) => _areaGradient(),
+                    )
+                  : _areaGradient(label: area.name),
+            ),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -86,6 +78,42 @@ class AreaHeroCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Designed placeholder for the area hero when no photo is found.
+/// Lime-tinted gradient + the neighborhood label so the card still
+/// reads "this is the area where you'll stay" without a misleading
+/// city skyline shot.
+Widget _areaGradient({String? label}) {
+  return Container(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          TSColors.lime.withValues(alpha: 0.16),
+          TSColors.s2,
+        ],
+      ),
+    ),
+    alignment: Alignment.center,
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text('🏘️', style: TextStyle(fontSize: 56)),
+        if (label != null && label.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: TSTextStyles.label(color: TSColors.text2, size: 12),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ],
+    ),
+  );
 }
 
 class _VibeChip extends StatelessWidget {

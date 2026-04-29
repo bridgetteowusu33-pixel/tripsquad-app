@@ -260,22 +260,26 @@ Deno.serve(async (req) => {
       trip: trip ?? undefined, q, clickId };
     const partnerUrl = buildPartnerUrl(params);
 
-    // Record the click. Don't await — fire and continue. The user
-    // gets the redirect immediately. If the insert fails we log and
-    // move on; the worst case is one missed analytic row.
-    supabase.from("affiliate_clickthroughs").insert({
-      trip_id: trip,
-      user_id,
-      partner,
-      kind,
-      target_id: target,
-      query: q,
-      click_id: clickId,
-      user_agent: ua,
-      ip_hash: ipHash,
-    }).then(({ error }) => {
-      if (error) console.warn("affiliate_clickthrough insert", error);
-    });
+    // Record the click. Must AWAIT — Supabase Edge Functions kill the
+    // request context the moment the response returns, so a fire-and-
+    // forget INSERT never lands. The cost is ~20ms of latency per
+    // click; worth it to never lose attribution data.
+    const { error: insertErr } = await supabase
+      .from("affiliate_clickthroughs")
+      .insert({
+        trip_id: trip,
+        user_id,
+        partner,
+        kind,
+        target_id: target,
+        query: q,
+        click_id: clickId,
+        user_agent: ua,
+        ip_hash: ipHash,
+      });
+    if (insertErr) {
+      console.warn("affiliate_clickthrough insert", insertErr);
+    }
 
     return Response.redirect(partnerUrl, 302);
   } catch (err) {

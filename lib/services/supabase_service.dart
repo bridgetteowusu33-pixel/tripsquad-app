@@ -2327,6 +2327,264 @@ class BlockService {
 }
 
 // ─────────────────────────────────────────────────────────────
+//  BOOKING SERVICE — squad-coordinated flight + accommodation
+//  bookings. Powered by member_arrival_plans, booking_confirmations,
+//  trip_booking_deadlines, and the trip_lockin_status view.
+//  Wires the new "book" tab in Trip Space.
+// ─────────────────────────────────────────────────────────────
+final bookingServiceProvider =
+    Provider((ref) => BookingService(ref.read(supabaseProvider)));
+
+class BookingService {
+  BookingService(this._db);
+  final SupabaseClient _db;
+
+  /// Realtime stream of every squad member's flight context for
+  /// this trip. Emits when ANY member updates their plan — the host
+  /// sees Tasha set her departure city, etc.
+  Stream<List<MemberArrivalPlan>> watchArrivalPlans(String tripId) {
+    return _db
+        .from('member_arrival_plans')
+        .stream(primaryKey: ['id'])
+        .eq('trip_id', tripId)
+        .map((rows) => rows
+            .map((r) => MemberArrivalPlan.fromJson(snakeToCamel(r)))
+            .toList());
+  }
+
+  /// Upsert the current user's arrival plan. Used when setting
+  /// departure city/iata for the first time and for state transitions
+  /// (not_set -> searching once departure is set).
+  Future<void> upsertMyArrivalPlan({
+    required String tripId,
+    String? departureCity,
+    String? departureIata,
+    String? arrivalIata,
+  }) async {
+    final uid = _db.auth.currentUser!.id;
+    // Read existing row to preserve fields we're not updating.
+    final existing = await _db
+        .from('member_arrival_plans')
+        .select()
+        .eq('trip_id', tripId)
+        .eq('user_id', uid)
+        .maybeSingle();
+
+    final payload = <String, dynamic>{
+      'trip_id': tripId,
+      'user_id': uid,
+      'departure_city':
+          departureCity ?? existing?['departure_city'],
+      'departure_iata':
+          departureIata ?? existing?['departure_iata'],
+      'arrival_iata': arrivalIata ?? existing?['arrival_iata'],
+      // Bumping into 'searching' the moment a departure is known.
+      'state': (departureIata ?? existing?['departure_iata']) != null
+          ? 'searching'
+          : (existing?['state'] ?? 'not_set'),
+    };
+    await _db.from('member_arrival_plans').upsert(
+      payload,
+      onConflict: 'trip_id,user_id',
+    );
+  }
+
+  /// Mark the current user's flight as booked. Sets is_anchor=true if
+  /// nobody else on the trip has booked yet — that flag drives the
+  /// "match the host's arrival" UX for everyone else.
+  Future<void> markMyFlightBooked({
+    required String tripId,
+    DateTime? outboundAt,
+    String? airline,
+    String? flightNumber,
+    String? bookingRef,
+  }) async {
+    final uid = _db.auth.currentUser!.id;
+    // Anyone already booked? If not, this user becomes the anchor.
+    final priorAnchor = await _db
+        .from('member_arrival_plans')
+        .select('id')
+        .eq('trip_id', tripId)
+        .eq('state', 'booked')
+        .limit(1)
+        .maybeSingle();
+    final isAnchor = priorAnchor == null;
+
+    await _db.from('member_arrival_plans').upsert({
+      'trip_id': tripId,
+      'user_id': uid,
+      'state': 'booked',
+      'is_anchor': isAnchor,
+      'outbound_at': outboundAt?.toIso8601String(),
+      'airline': airline,
+      'flight_number': flightNumber,
+      'booking_ref': bookingRef,
+      'booked_at': DateTime.now().toUtc().toIso8601String(),
+    }, onConflict: 'trip_id,user_id');
+
+    // Also record in booking_confirmations so the lock-in counter
+    // climbs. Two surfaces tracking different concerns: arrival_plans
+    // is per-flight detail; confirmations is the squad-visible "I'm
+    // in" log used for percentages and chat broadcasts.
+    await recordBookingConfirmation(
+      tripId: tripId,
+      kind: 'flight',
+    );
+  }
+
+  /// Squad-self-reported "I booked this." Insert OR update the existing
+  /// row (UNIQUE per trip+user+kind). recommendationId is set when
+  /// confirming a specific accommodation rec; null for flights.
+  Future<void> recordBookingConfirmation({
+    required String tripId,
+    required String kind,
+    String? recommendationId,
+    String? arrivalPlanId,
+    int? totalCents,
+    String? notes,
+  }) async {
+    final uid = _db.auth.currentUser!.id;
+    await _db.from('booking_confirmations').upsert({
+      'trip_id': tripId,
+      'user_id': uid,
+      'kind': kind,
+      'recommendation_id': recommendationId,
+      'arrival_plan_id': arrivalPlanId,
+      'total_cents': totalCents,
+      'notes': notes,
+    }, onConflict: 'trip_id,user_id,kind');
+
+    // Fan out to the squad chat — same pattern as other "moment"
+    // events. Best-effort; don't fail the confirm if the event
+    // insert fails.
+    try {
+      await _db.from('trip_events').insert({
+        'trip_id': tripId,
+        'kind': kind == 'flight'
+            ? 'flight_booked'
+            : 'accommodation_booked',
+        'actor_user_id': uid,
+        'payload': {
+          'title': kind == 'flight'
+              ? '✈️ flight locked in'
+              : '🏨 accommodation locked in',
+        },
+      });
+    } catch (_) { /* non-fatal */ }
+  }
+
+  /// Realtime list of all squad confirmations for the trip — used to
+  /// render avatar stacks ("3 of 6 booked into Casa Mariana") and the
+  /// lock-in counter when no view is materialized.
+  Stream<List<BookingConfirmation>> watchConfirmations(String tripId) {
+    return _db
+        .from('booking_confirmations')
+        .stream(primaryKey: ['id'])
+        .eq('trip_id', tripId)
+        .map((rows) => rows
+            .map((r) => BookingConfirmation.fromJson(snakeToCamel(r)))
+            .toList());
+  }
+
+  /// Lock-in status snapshot for the trip header chip. Polled rather
+  /// than streamed because trip_lockin_status is a view (Supabase
+  /// realtime doesn't broadcast view changes — but the underlying
+  /// tables do, and the providers re-fetch on those events).
+  Future<TripLockinStatus?> fetchLockinStatus(String tripId) async {
+    final row = await _db
+        .from('trip_lockin_status')
+        .select()
+        .eq('trip_id', tripId)
+        .maybeSingle();
+    if (row == null) return null;
+    return TripLockinStatus.fromJson(snakeToCamel(row));
+  }
+
+  Stream<List<TripBookingDeadline>> watchDeadlines(String tripId) {
+    return _db
+        .from('trip_booking_deadlines')
+        .stream(primaryKey: ['trip_id', 'kind'])
+        .eq('trip_id', tripId)
+        .map((rows) => rows
+            .map((r) => TripBookingDeadline.fromJson(snakeToCamel(r)))
+            .toList());
+  }
+
+  /// Host sets a deadline. RLS enforces host-only writes; service
+  /// just builds the row.
+  Future<void> setDeadline({
+    required String tripId,
+    required String kind,
+    required DateTime deadline,
+  }) async {
+    final uid = _db.auth.currentUser!.id;
+    await _db.from('trip_booking_deadlines').upsert({
+      'trip_id': tripId,
+      'kind': kind,
+      'deadline_at': deadline.toUtc().toIso8601String(),
+      'set_by': uid,
+    }, onConflict: 'trip_id,kind');
+  }
+
+  /// Build the per-member affiliate-tracked flight search URL. Sends
+  /// users through `affiliate_redirect` so every click is recorded
+  /// and Travelpayouts attribution is preserved. Uses Aviasales when
+  /// both IATAs are known; falls back to Google Flights otherwise.
+  String buildFlightSearchUrl({
+    required String tripId,
+    required String memberUserId,
+    String? departureIata,
+    String? arrivalIata,
+    DateTime? departDate,
+    DateTime? returnDate,
+    int adults = 1,
+  }) {
+    final supabaseUrl = _db.rest.url.toString().replaceAll(RegExp(r'/rest/v1/?$'), '');
+    final canUseAviasales = (departureIata != null &&
+        departureIata.length == 3 &&
+        arrivalIata != null &&
+        arrivalIata.length == 3);
+
+    String ddmm(DateTime? d) {
+      if (d == null) return '';
+      final dd = d.day.toString().padLeft(2, '0');
+      final mm = d.month.toString().padLeft(2, '0');
+      return '$dd$mm';
+    }
+
+    final q = canUseAviasales
+        ? {
+            'from': departureIata,
+            'to': arrivalIata,
+            'outbound_ddmm': ddmm(departDate),
+            'return_ddmm': ddmm(returnDate),
+            'adults': adults.toString(),
+          }
+        : {
+            'from': departureIata ?? '',
+            'to': arrivalIata ?? '',
+            'outbound':
+                departDate?.toIso8601String().split('T').first ?? '',
+            'return':
+                returnDate?.toIso8601String().split('T').first ?? '',
+            'adults': adults.toString(),
+          };
+
+    final qB64 = base64.encode(utf8.encode(jsonEncode(q)));
+    final partner = canUseAviasales ? 'aviasales' : 'google_flights';
+    final uri = Uri.parse('$supabaseUrl/functions/v1/affiliate_redirect')
+        .replace(queryParameters: {
+      'partner': partner,
+      'kind': 'flight',
+      'trip': tripId,
+      'target': 'flight:$memberUserId',
+      'q': qB64,
+    });
+    return uri.toString();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 //  RECOMMENDATIONS SERVICE — Scout's stays + eats picks for a
 //  trip. Powered by trip_recommendations + the
 //  generate_recommendations Edge Function.

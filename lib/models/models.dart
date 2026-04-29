@@ -578,6 +578,99 @@ class MatchProfile with _$MatchProfile {
       _$MatchProfileFromJson(json);
 }
 
+// ── Booking layer (v1.2) ─────────────────────────────────────
+// Per-squad-member flight context. The "anchor" is the first booker
+// — others' search queries pre-fill an arrival window matching the
+// anchor's outbound_at. State machine drives the per-member card UI
+// in book_tab.dart.
+enum ArrivalPlanState { not_set, searching, booked, cancelled }
+
+@freezed
+class MemberArrivalPlan with _$MemberArrivalPlan {
+  const factory MemberArrivalPlan({
+    required String id,
+    required String tripId,
+    required String userId,
+    String? departureCity,
+    String? departureIata,        // 3-letter airport code
+    String? arrivalIata,
+    DateTime? outboundAt,         // locked when booked
+    String? airline,
+    String? flightNumber,
+    String? bookingRef,
+    @Default(ArrivalPlanState.not_set) ArrivalPlanState state,
+    @Default(false) bool isAnchor,
+    DateTime? bookedAt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) = _MemberArrivalPlan;
+
+  factory MemberArrivalPlan.fromJson(Map<String, dynamic> json) =>
+      _$MemberArrivalPlanFromJson(json);
+}
+
+// Squad-self-reported "I booked this" log. Drives the lock-in counter
+// and the "X of N booked into this hotel" indicator on accommodation
+// cards. UNIQUE per (trip, user, kind) — re-confirming replaces.
+enum BookingKind { flight, accommodation }
+
+@freezed
+class BookingConfirmation with _$BookingConfirmation {
+  const factory BookingConfirmation({
+    required String id,
+    required String tripId,
+    required String userId,
+    required BookingKind kind,
+    String? recommendationId,
+    String? arrivalPlanId,
+    int? totalCents,
+    @Default('USD') String currency,
+    String? notes,
+    DateTime? confirmedAt,
+  }) = _BookingConfirmation;
+
+  factory BookingConfirmation.fromJson(Map<String, dynamic> json) =>
+      _$BookingConfirmationFromJson(json);
+}
+
+// Host-set deadline per kind. Drives the countdown chip + push
+// notifications at 24h / 8h / 2h before the deadline.
+@freezed
+class TripBookingDeadline with _$TripBookingDeadline {
+  const factory TripBookingDeadline({
+    required String tripId,
+    required BookingKind kind,
+    required DateTime deadlineAt,
+    String? setBy,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) = _TripBookingDeadline;
+
+  factory TripBookingDeadline.fromJson(Map<String, dynamic> json) =>
+      _$TripBookingDeadlineFromJson(json);
+}
+
+// Derived view — "3/6 squad locked in" math. Refreshed implicitly
+// by Postgres when underlying tables change. flights_booked counts
+// distinct users with a flight booking_confirmation; same for
+// accommodation. Percentages are rounded ints.
+@freezed
+class TripLockinStatus with _$TripLockinStatus {
+  const factory TripLockinStatus({
+    required String tripId,
+    @Default(0) int squadSize,
+    @Default(0) int flightsBooked,
+    @Default(0) int accommodationBooked,
+    int? flightLockinPct,
+    int? accommodationLockinPct,
+    DateTime? flightDeadline,
+    DateTime? accommodationDeadline,
+  }) = _TripLockinStatus;
+
+  factory TripLockinStatus.fromJson(Map<String, dynamic> json) =>
+      _$TripLockinStatusFromJson(json);
+}
+
 // ── Trip Recommendation (Scout-picked stays + eats) ──────────
 // One row per recommendation in `trip_recommendations`. Three
 // kinds share the same shape: `area` is the "best area to stay"

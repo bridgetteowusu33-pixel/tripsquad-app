@@ -177,15 +177,14 @@ function buildPartnerUrl(params: RedirectParams): string {
     }
 
     case "best_hotel": {
-      // Smart routing — pick the highest-commission partner whose
-      // affiliate ID is configured. Booking.com pays the most (~30-40%
-      // of their fee) when we have a direct AID; Hotellook (via
-      // Travelpayouts) is the always-attributed fallback. As the user
-      // adds Marriott / Expedia / etc., extend this chain.
-      const next = BOOKING_AID
-        ? "booking_com"
-        : (TP_MARKER ? "hotellook" : "booking_com");
-      return buildPartnerUrl({ ...params, partner: next });
+      // Smart routing — Booking.com direct is the default because its
+      // inventory coverage dwarfs Hotellook's. Without an AID we get
+      // no commission yet, but users actually find rooms (Hotellook's
+      // partial inventory was breaking the booking flow on smaller
+      // hotels). Once BOOKING_AFFILIATE_AID is set, the same code
+      // path injects the AID. Hotellook stays available as an
+      // explicit `partner=hotellook` for when we want it.
+      return buildPartnerUrl({ ...params, partner: "booking_com" });
     }
 
     case "best_flight": {

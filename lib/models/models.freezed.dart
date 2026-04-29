@@ -8756,6 +8756,1342 @@ abstract class _MatchProfile implements MatchProfile {
       throw _privateConstructorUsedError;
 }
 
+MemberArrivalPlan _$MemberArrivalPlanFromJson(Map<String, dynamic> json) {
+  return _MemberArrivalPlan.fromJson(json);
+}
+
+/// @nodoc
+mixin _$MemberArrivalPlan {
+  String get id => throw _privateConstructorUsedError;
+  String get tripId => throw _privateConstructorUsedError;
+  String get userId => throw _privateConstructorUsedError;
+  String? get departureCity => throw _privateConstructorUsedError;
+  String? get departureIata =>
+      throw _privateConstructorUsedError; // 3-letter airport code
+  String? get arrivalIata => throw _privateConstructorUsedError;
+  DateTime? get outboundAt =>
+      throw _privateConstructorUsedError; // locked when booked
+  String? get airline => throw _privateConstructorUsedError;
+  String? get flightNumber => throw _privateConstructorUsedError;
+  String? get bookingRef => throw _privateConstructorUsedError;
+  ArrivalPlanState get state => throw _privateConstructorUsedError;
+  bool get isAnchor => throw _privateConstructorUsedError;
+  DateTime? get bookedAt => throw _privateConstructorUsedError;
+  DateTime? get createdAt => throw _privateConstructorUsedError;
+  DateTime? get updatedAt => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $MemberArrivalPlanCopyWith<MemberArrivalPlan> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $MemberArrivalPlanCopyWith<$Res> {
+  factory $MemberArrivalPlanCopyWith(
+          MemberArrivalPlan value, $Res Function(MemberArrivalPlan) then) =
+      _$MemberArrivalPlanCopyWithImpl<$Res, MemberArrivalPlan>;
+  @useResult
+  $Res call(
+      {String id,
+      String tripId,
+      String userId,
+      String? departureCity,
+      String? departureIata,
+      String? arrivalIata,
+      DateTime? outboundAt,
+      String? airline,
+      String? flightNumber,
+      String? bookingRef,
+      ArrivalPlanState state,
+      bool isAnchor,
+      DateTime? bookedAt,
+      DateTime? createdAt,
+      DateTime? updatedAt});
+}
+
+/// @nodoc
+class _$MemberArrivalPlanCopyWithImpl<$Res, $Val extends MemberArrivalPlan>
+    implements $MemberArrivalPlanCopyWith<$Res> {
+  _$MemberArrivalPlanCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? tripId = null,
+    Object? userId = null,
+    Object? departureCity = freezed,
+    Object? departureIata = freezed,
+    Object? arrivalIata = freezed,
+    Object? outboundAt = freezed,
+    Object? airline = freezed,
+    Object? flightNumber = freezed,
+    Object? bookingRef = freezed,
+    Object? state = null,
+    Object? isAnchor = null,
+    Object? bookedAt = freezed,
+    Object? createdAt = freezed,
+    Object? updatedAt = freezed,
+  }) {
+    return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      tripId: null == tripId
+          ? _value.tripId
+          : tripId // ignore: cast_nullable_to_non_nullable
+              as String,
+      userId: null == userId
+          ? _value.userId
+          : userId // ignore: cast_nullable_to_non_nullable
+              as String,
+      departureCity: freezed == departureCity
+          ? _value.departureCity
+          : departureCity // ignore: cast_nullable_to_non_nullable
+              as String?,
+      departureIata: freezed == departureIata
+          ? _value.departureIata
+          : departureIata // ignore: cast_nullable_to_non_nullable
+              as String?,
+      arrivalIata: freezed == arrivalIata
+          ? _value.arrivalIata
+          : arrivalIata // ignore: cast_nullable_to_non_nullable
+              as String?,
+      outboundAt: freezed == outboundAt
+          ? _value.outboundAt
+          : outboundAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      airline: freezed == airline
+          ? _value.airline
+          : airline // ignore: cast_nullable_to_non_nullable
+              as String?,
+      flightNumber: freezed == flightNumber
+          ? _value.flightNumber
+          : flightNumber // ignore: cast_nullable_to_non_nullable
+              as String?,
+      bookingRef: freezed == bookingRef
+          ? _value.bookingRef
+          : bookingRef // ignore: cast_nullable_to_non_nullable
+              as String?,
+      state: null == state
+          ? _value.state
+          : state // ignore: cast_nullable_to_non_nullable
+              as ArrivalPlanState,
+      isAnchor: null == isAnchor
+          ? _value.isAnchor
+          : isAnchor // ignore: cast_nullable_to_non_nullable
+              as bool,
+      bookedAt: freezed == bookedAt
+          ? _value.bookedAt
+          : bookedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$MemberArrivalPlanImplCopyWith<$Res>
+    implements $MemberArrivalPlanCopyWith<$Res> {
+  factory _$$MemberArrivalPlanImplCopyWith(_$MemberArrivalPlanImpl value,
+          $Res Function(_$MemberArrivalPlanImpl) then) =
+      __$$MemberArrivalPlanImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String tripId,
+      String userId,
+      String? departureCity,
+      String? departureIata,
+      String? arrivalIata,
+      DateTime? outboundAt,
+      String? airline,
+      String? flightNumber,
+      String? bookingRef,
+      ArrivalPlanState state,
+      bool isAnchor,
+      DateTime? bookedAt,
+      DateTime? createdAt,
+      DateTime? updatedAt});
+}
+
+/// @nodoc
+class __$$MemberArrivalPlanImplCopyWithImpl<$Res>
+    extends _$MemberArrivalPlanCopyWithImpl<$Res, _$MemberArrivalPlanImpl>
+    implements _$$MemberArrivalPlanImplCopyWith<$Res> {
+  __$$MemberArrivalPlanImplCopyWithImpl(_$MemberArrivalPlanImpl _value,
+      $Res Function(_$MemberArrivalPlanImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? tripId = null,
+    Object? userId = null,
+    Object? departureCity = freezed,
+    Object? departureIata = freezed,
+    Object? arrivalIata = freezed,
+    Object? outboundAt = freezed,
+    Object? airline = freezed,
+    Object? flightNumber = freezed,
+    Object? bookingRef = freezed,
+    Object? state = null,
+    Object? isAnchor = null,
+    Object? bookedAt = freezed,
+    Object? createdAt = freezed,
+    Object? updatedAt = freezed,
+  }) {
+    return _then(_$MemberArrivalPlanImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      tripId: null == tripId
+          ? _value.tripId
+          : tripId // ignore: cast_nullable_to_non_nullable
+              as String,
+      userId: null == userId
+          ? _value.userId
+          : userId // ignore: cast_nullable_to_non_nullable
+              as String,
+      departureCity: freezed == departureCity
+          ? _value.departureCity
+          : departureCity // ignore: cast_nullable_to_non_nullable
+              as String?,
+      departureIata: freezed == departureIata
+          ? _value.departureIata
+          : departureIata // ignore: cast_nullable_to_non_nullable
+              as String?,
+      arrivalIata: freezed == arrivalIata
+          ? _value.arrivalIata
+          : arrivalIata // ignore: cast_nullable_to_non_nullable
+              as String?,
+      outboundAt: freezed == outboundAt
+          ? _value.outboundAt
+          : outboundAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      airline: freezed == airline
+          ? _value.airline
+          : airline // ignore: cast_nullable_to_non_nullable
+              as String?,
+      flightNumber: freezed == flightNumber
+          ? _value.flightNumber
+          : flightNumber // ignore: cast_nullable_to_non_nullable
+              as String?,
+      bookingRef: freezed == bookingRef
+          ? _value.bookingRef
+          : bookingRef // ignore: cast_nullable_to_non_nullable
+              as String?,
+      state: null == state
+          ? _value.state
+          : state // ignore: cast_nullable_to_non_nullable
+              as ArrivalPlanState,
+      isAnchor: null == isAnchor
+          ? _value.isAnchor
+          : isAnchor // ignore: cast_nullable_to_non_nullable
+              as bool,
+      bookedAt: freezed == bookedAt
+          ? _value.bookedAt
+          : bookedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$MemberArrivalPlanImpl implements _MemberArrivalPlan {
+  const _$MemberArrivalPlanImpl(
+      {required this.id,
+      required this.tripId,
+      required this.userId,
+      this.departureCity,
+      this.departureIata,
+      this.arrivalIata,
+      this.outboundAt,
+      this.airline,
+      this.flightNumber,
+      this.bookingRef,
+      this.state = ArrivalPlanState.not_set,
+      this.isAnchor = false,
+      this.bookedAt,
+      this.createdAt,
+      this.updatedAt});
+
+  factory _$MemberArrivalPlanImpl.fromJson(Map<String, dynamic> json) =>
+      _$$MemberArrivalPlanImplFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String tripId;
+  @override
+  final String userId;
+  @override
+  final String? departureCity;
+  @override
+  final String? departureIata;
+// 3-letter airport code
+  @override
+  final String? arrivalIata;
+  @override
+  final DateTime? outboundAt;
+// locked when booked
+  @override
+  final String? airline;
+  @override
+  final String? flightNumber;
+  @override
+  final String? bookingRef;
+  @override
+  @JsonKey()
+  final ArrivalPlanState state;
+  @override
+  @JsonKey()
+  final bool isAnchor;
+  @override
+  final DateTime? bookedAt;
+  @override
+  final DateTime? createdAt;
+  @override
+  final DateTime? updatedAt;
+
+  @override
+  String toString() {
+    return 'MemberArrivalPlan(id: $id, tripId: $tripId, userId: $userId, departureCity: $departureCity, departureIata: $departureIata, arrivalIata: $arrivalIata, outboundAt: $outboundAt, airline: $airline, flightNumber: $flightNumber, bookingRef: $bookingRef, state: $state, isAnchor: $isAnchor, bookedAt: $bookedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$MemberArrivalPlanImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.tripId, tripId) || other.tripId == tripId) &&
+            (identical(other.userId, userId) || other.userId == userId) &&
+            (identical(other.departureCity, departureCity) ||
+                other.departureCity == departureCity) &&
+            (identical(other.departureIata, departureIata) ||
+                other.departureIata == departureIata) &&
+            (identical(other.arrivalIata, arrivalIata) ||
+                other.arrivalIata == arrivalIata) &&
+            (identical(other.outboundAt, outboundAt) ||
+                other.outboundAt == outboundAt) &&
+            (identical(other.airline, airline) || other.airline == airline) &&
+            (identical(other.flightNumber, flightNumber) ||
+                other.flightNumber == flightNumber) &&
+            (identical(other.bookingRef, bookingRef) ||
+                other.bookingRef == bookingRef) &&
+            (identical(other.state, state) || other.state == state) &&
+            (identical(other.isAnchor, isAnchor) ||
+                other.isAnchor == isAnchor) &&
+            (identical(other.bookedAt, bookedAt) ||
+                other.bookedAt == bookedAt) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      tripId,
+      userId,
+      departureCity,
+      departureIata,
+      arrivalIata,
+      outboundAt,
+      airline,
+      flightNumber,
+      bookingRef,
+      state,
+      isAnchor,
+      bookedAt,
+      createdAt,
+      updatedAt);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$MemberArrivalPlanImplCopyWith<_$MemberArrivalPlanImpl> get copyWith =>
+      __$$MemberArrivalPlanImplCopyWithImpl<_$MemberArrivalPlanImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$MemberArrivalPlanImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _MemberArrivalPlan implements MemberArrivalPlan {
+  const factory _MemberArrivalPlan(
+      {required final String id,
+      required final String tripId,
+      required final String userId,
+      final String? departureCity,
+      final String? departureIata,
+      final String? arrivalIata,
+      final DateTime? outboundAt,
+      final String? airline,
+      final String? flightNumber,
+      final String? bookingRef,
+      final ArrivalPlanState state,
+      final bool isAnchor,
+      final DateTime? bookedAt,
+      final DateTime? createdAt,
+      final DateTime? updatedAt}) = _$MemberArrivalPlanImpl;
+
+  factory _MemberArrivalPlan.fromJson(Map<String, dynamic> json) =
+      _$MemberArrivalPlanImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  String get tripId;
+  @override
+  String get userId;
+  @override
+  String? get departureCity;
+  @override
+  String? get departureIata;
+  @override // 3-letter airport code
+  String? get arrivalIata;
+  @override
+  DateTime? get outboundAt;
+  @override // locked when booked
+  String? get airline;
+  @override
+  String? get flightNumber;
+  @override
+  String? get bookingRef;
+  @override
+  ArrivalPlanState get state;
+  @override
+  bool get isAnchor;
+  @override
+  DateTime? get bookedAt;
+  @override
+  DateTime? get createdAt;
+  @override
+  DateTime? get updatedAt;
+  @override
+  @JsonKey(ignore: true)
+  _$$MemberArrivalPlanImplCopyWith<_$MemberArrivalPlanImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+BookingConfirmation _$BookingConfirmationFromJson(Map<String, dynamic> json) {
+  return _BookingConfirmation.fromJson(json);
+}
+
+/// @nodoc
+mixin _$BookingConfirmation {
+  String get id => throw _privateConstructorUsedError;
+  String get tripId => throw _privateConstructorUsedError;
+  String get userId => throw _privateConstructorUsedError;
+  BookingKind get kind => throw _privateConstructorUsedError;
+  String? get recommendationId => throw _privateConstructorUsedError;
+  String? get arrivalPlanId => throw _privateConstructorUsedError;
+  int? get totalCents => throw _privateConstructorUsedError;
+  String get currency => throw _privateConstructorUsedError;
+  String? get notes => throw _privateConstructorUsedError;
+  DateTime? get confirmedAt => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $BookingConfirmationCopyWith<BookingConfirmation> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $BookingConfirmationCopyWith<$Res> {
+  factory $BookingConfirmationCopyWith(
+          BookingConfirmation value, $Res Function(BookingConfirmation) then) =
+      _$BookingConfirmationCopyWithImpl<$Res, BookingConfirmation>;
+  @useResult
+  $Res call(
+      {String id,
+      String tripId,
+      String userId,
+      BookingKind kind,
+      String? recommendationId,
+      String? arrivalPlanId,
+      int? totalCents,
+      String currency,
+      String? notes,
+      DateTime? confirmedAt});
+}
+
+/// @nodoc
+class _$BookingConfirmationCopyWithImpl<$Res, $Val extends BookingConfirmation>
+    implements $BookingConfirmationCopyWith<$Res> {
+  _$BookingConfirmationCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? tripId = null,
+    Object? userId = null,
+    Object? kind = null,
+    Object? recommendationId = freezed,
+    Object? arrivalPlanId = freezed,
+    Object? totalCents = freezed,
+    Object? currency = null,
+    Object? notes = freezed,
+    Object? confirmedAt = freezed,
+  }) {
+    return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      tripId: null == tripId
+          ? _value.tripId
+          : tripId // ignore: cast_nullable_to_non_nullable
+              as String,
+      userId: null == userId
+          ? _value.userId
+          : userId // ignore: cast_nullable_to_non_nullable
+              as String,
+      kind: null == kind
+          ? _value.kind
+          : kind // ignore: cast_nullable_to_non_nullable
+              as BookingKind,
+      recommendationId: freezed == recommendationId
+          ? _value.recommendationId
+          : recommendationId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      arrivalPlanId: freezed == arrivalPlanId
+          ? _value.arrivalPlanId
+          : arrivalPlanId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      totalCents: freezed == totalCents
+          ? _value.totalCents
+          : totalCents // ignore: cast_nullable_to_non_nullable
+              as int?,
+      currency: null == currency
+          ? _value.currency
+          : currency // ignore: cast_nullable_to_non_nullable
+              as String,
+      notes: freezed == notes
+          ? _value.notes
+          : notes // ignore: cast_nullable_to_non_nullable
+              as String?,
+      confirmedAt: freezed == confirmedAt
+          ? _value.confirmedAt
+          : confirmedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$BookingConfirmationImplCopyWith<$Res>
+    implements $BookingConfirmationCopyWith<$Res> {
+  factory _$$BookingConfirmationImplCopyWith(_$BookingConfirmationImpl value,
+          $Res Function(_$BookingConfirmationImpl) then) =
+      __$$BookingConfirmationImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String tripId,
+      String userId,
+      BookingKind kind,
+      String? recommendationId,
+      String? arrivalPlanId,
+      int? totalCents,
+      String currency,
+      String? notes,
+      DateTime? confirmedAt});
+}
+
+/// @nodoc
+class __$$BookingConfirmationImplCopyWithImpl<$Res>
+    extends _$BookingConfirmationCopyWithImpl<$Res, _$BookingConfirmationImpl>
+    implements _$$BookingConfirmationImplCopyWith<$Res> {
+  __$$BookingConfirmationImplCopyWithImpl(_$BookingConfirmationImpl _value,
+      $Res Function(_$BookingConfirmationImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? tripId = null,
+    Object? userId = null,
+    Object? kind = null,
+    Object? recommendationId = freezed,
+    Object? arrivalPlanId = freezed,
+    Object? totalCents = freezed,
+    Object? currency = null,
+    Object? notes = freezed,
+    Object? confirmedAt = freezed,
+  }) {
+    return _then(_$BookingConfirmationImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      tripId: null == tripId
+          ? _value.tripId
+          : tripId // ignore: cast_nullable_to_non_nullable
+              as String,
+      userId: null == userId
+          ? _value.userId
+          : userId // ignore: cast_nullable_to_non_nullable
+              as String,
+      kind: null == kind
+          ? _value.kind
+          : kind // ignore: cast_nullable_to_non_nullable
+              as BookingKind,
+      recommendationId: freezed == recommendationId
+          ? _value.recommendationId
+          : recommendationId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      arrivalPlanId: freezed == arrivalPlanId
+          ? _value.arrivalPlanId
+          : arrivalPlanId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      totalCents: freezed == totalCents
+          ? _value.totalCents
+          : totalCents // ignore: cast_nullable_to_non_nullable
+              as int?,
+      currency: null == currency
+          ? _value.currency
+          : currency // ignore: cast_nullable_to_non_nullable
+              as String,
+      notes: freezed == notes
+          ? _value.notes
+          : notes // ignore: cast_nullable_to_non_nullable
+              as String?,
+      confirmedAt: freezed == confirmedAt
+          ? _value.confirmedAt
+          : confirmedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$BookingConfirmationImpl implements _BookingConfirmation {
+  const _$BookingConfirmationImpl(
+      {required this.id,
+      required this.tripId,
+      required this.userId,
+      required this.kind,
+      this.recommendationId,
+      this.arrivalPlanId,
+      this.totalCents,
+      this.currency = 'USD',
+      this.notes,
+      this.confirmedAt});
+
+  factory _$BookingConfirmationImpl.fromJson(Map<String, dynamic> json) =>
+      _$$BookingConfirmationImplFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String tripId;
+  @override
+  final String userId;
+  @override
+  final BookingKind kind;
+  @override
+  final String? recommendationId;
+  @override
+  final String? arrivalPlanId;
+  @override
+  final int? totalCents;
+  @override
+  @JsonKey()
+  final String currency;
+  @override
+  final String? notes;
+  @override
+  final DateTime? confirmedAt;
+
+  @override
+  String toString() {
+    return 'BookingConfirmation(id: $id, tripId: $tripId, userId: $userId, kind: $kind, recommendationId: $recommendationId, arrivalPlanId: $arrivalPlanId, totalCents: $totalCents, currency: $currency, notes: $notes, confirmedAt: $confirmedAt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$BookingConfirmationImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.tripId, tripId) || other.tripId == tripId) &&
+            (identical(other.userId, userId) || other.userId == userId) &&
+            (identical(other.kind, kind) || other.kind == kind) &&
+            (identical(other.recommendationId, recommendationId) ||
+                other.recommendationId == recommendationId) &&
+            (identical(other.arrivalPlanId, arrivalPlanId) ||
+                other.arrivalPlanId == arrivalPlanId) &&
+            (identical(other.totalCents, totalCents) ||
+                other.totalCents == totalCents) &&
+            (identical(other.currency, currency) ||
+                other.currency == currency) &&
+            (identical(other.notes, notes) || other.notes == notes) &&
+            (identical(other.confirmedAt, confirmedAt) ||
+                other.confirmedAt == confirmedAt));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      tripId,
+      userId,
+      kind,
+      recommendationId,
+      arrivalPlanId,
+      totalCents,
+      currency,
+      notes,
+      confirmedAt);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$BookingConfirmationImplCopyWith<_$BookingConfirmationImpl> get copyWith =>
+      __$$BookingConfirmationImplCopyWithImpl<_$BookingConfirmationImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$BookingConfirmationImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _BookingConfirmation implements BookingConfirmation {
+  const factory _BookingConfirmation(
+      {required final String id,
+      required final String tripId,
+      required final String userId,
+      required final BookingKind kind,
+      final String? recommendationId,
+      final String? arrivalPlanId,
+      final int? totalCents,
+      final String currency,
+      final String? notes,
+      final DateTime? confirmedAt}) = _$BookingConfirmationImpl;
+
+  factory _BookingConfirmation.fromJson(Map<String, dynamic> json) =
+      _$BookingConfirmationImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  String get tripId;
+  @override
+  String get userId;
+  @override
+  BookingKind get kind;
+  @override
+  String? get recommendationId;
+  @override
+  String? get arrivalPlanId;
+  @override
+  int? get totalCents;
+  @override
+  String get currency;
+  @override
+  String? get notes;
+  @override
+  DateTime? get confirmedAt;
+  @override
+  @JsonKey(ignore: true)
+  _$$BookingConfirmationImplCopyWith<_$BookingConfirmationImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+TripBookingDeadline _$TripBookingDeadlineFromJson(Map<String, dynamic> json) {
+  return _TripBookingDeadline.fromJson(json);
+}
+
+/// @nodoc
+mixin _$TripBookingDeadline {
+  String get tripId => throw _privateConstructorUsedError;
+  BookingKind get kind => throw _privateConstructorUsedError;
+  DateTime get deadlineAt => throw _privateConstructorUsedError;
+  String? get setBy => throw _privateConstructorUsedError;
+  DateTime? get createdAt => throw _privateConstructorUsedError;
+  DateTime? get updatedAt => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $TripBookingDeadlineCopyWith<TripBookingDeadline> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TripBookingDeadlineCopyWith<$Res> {
+  factory $TripBookingDeadlineCopyWith(
+          TripBookingDeadline value, $Res Function(TripBookingDeadline) then) =
+      _$TripBookingDeadlineCopyWithImpl<$Res, TripBookingDeadline>;
+  @useResult
+  $Res call(
+      {String tripId,
+      BookingKind kind,
+      DateTime deadlineAt,
+      String? setBy,
+      DateTime? createdAt,
+      DateTime? updatedAt});
+}
+
+/// @nodoc
+class _$TripBookingDeadlineCopyWithImpl<$Res, $Val extends TripBookingDeadline>
+    implements $TripBookingDeadlineCopyWith<$Res> {
+  _$TripBookingDeadlineCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? tripId = null,
+    Object? kind = null,
+    Object? deadlineAt = null,
+    Object? setBy = freezed,
+    Object? createdAt = freezed,
+    Object? updatedAt = freezed,
+  }) {
+    return _then(_value.copyWith(
+      tripId: null == tripId
+          ? _value.tripId
+          : tripId // ignore: cast_nullable_to_non_nullable
+              as String,
+      kind: null == kind
+          ? _value.kind
+          : kind // ignore: cast_nullable_to_non_nullable
+              as BookingKind,
+      deadlineAt: null == deadlineAt
+          ? _value.deadlineAt
+          : deadlineAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      setBy: freezed == setBy
+          ? _value.setBy
+          : setBy // ignore: cast_nullable_to_non_nullable
+              as String?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$TripBookingDeadlineImplCopyWith<$Res>
+    implements $TripBookingDeadlineCopyWith<$Res> {
+  factory _$$TripBookingDeadlineImplCopyWith(_$TripBookingDeadlineImpl value,
+          $Res Function(_$TripBookingDeadlineImpl) then) =
+      __$$TripBookingDeadlineImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String tripId,
+      BookingKind kind,
+      DateTime deadlineAt,
+      String? setBy,
+      DateTime? createdAt,
+      DateTime? updatedAt});
+}
+
+/// @nodoc
+class __$$TripBookingDeadlineImplCopyWithImpl<$Res>
+    extends _$TripBookingDeadlineCopyWithImpl<$Res, _$TripBookingDeadlineImpl>
+    implements _$$TripBookingDeadlineImplCopyWith<$Res> {
+  __$$TripBookingDeadlineImplCopyWithImpl(_$TripBookingDeadlineImpl _value,
+      $Res Function(_$TripBookingDeadlineImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? tripId = null,
+    Object? kind = null,
+    Object? deadlineAt = null,
+    Object? setBy = freezed,
+    Object? createdAt = freezed,
+    Object? updatedAt = freezed,
+  }) {
+    return _then(_$TripBookingDeadlineImpl(
+      tripId: null == tripId
+          ? _value.tripId
+          : tripId // ignore: cast_nullable_to_non_nullable
+              as String,
+      kind: null == kind
+          ? _value.kind
+          : kind // ignore: cast_nullable_to_non_nullable
+              as BookingKind,
+      deadlineAt: null == deadlineAt
+          ? _value.deadlineAt
+          : deadlineAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      setBy: freezed == setBy
+          ? _value.setBy
+          : setBy // ignore: cast_nullable_to_non_nullable
+              as String?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TripBookingDeadlineImpl implements _TripBookingDeadline {
+  const _$TripBookingDeadlineImpl(
+      {required this.tripId,
+      required this.kind,
+      required this.deadlineAt,
+      this.setBy,
+      this.createdAt,
+      this.updatedAt});
+
+  factory _$TripBookingDeadlineImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TripBookingDeadlineImplFromJson(json);
+
+  @override
+  final String tripId;
+  @override
+  final BookingKind kind;
+  @override
+  final DateTime deadlineAt;
+  @override
+  final String? setBy;
+  @override
+  final DateTime? createdAt;
+  @override
+  final DateTime? updatedAt;
+
+  @override
+  String toString() {
+    return 'TripBookingDeadline(tripId: $tripId, kind: $kind, deadlineAt: $deadlineAt, setBy: $setBy, createdAt: $createdAt, updatedAt: $updatedAt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TripBookingDeadlineImpl &&
+            (identical(other.tripId, tripId) || other.tripId == tripId) &&
+            (identical(other.kind, kind) || other.kind == kind) &&
+            (identical(other.deadlineAt, deadlineAt) ||
+                other.deadlineAt == deadlineAt) &&
+            (identical(other.setBy, setBy) || other.setBy == setBy) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, tripId, kind, deadlineAt, setBy, createdAt, updatedAt);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TripBookingDeadlineImplCopyWith<_$TripBookingDeadlineImpl> get copyWith =>
+      __$$TripBookingDeadlineImplCopyWithImpl<_$TripBookingDeadlineImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TripBookingDeadlineImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _TripBookingDeadline implements TripBookingDeadline {
+  const factory _TripBookingDeadline(
+      {required final String tripId,
+      required final BookingKind kind,
+      required final DateTime deadlineAt,
+      final String? setBy,
+      final DateTime? createdAt,
+      final DateTime? updatedAt}) = _$TripBookingDeadlineImpl;
+
+  factory _TripBookingDeadline.fromJson(Map<String, dynamic> json) =
+      _$TripBookingDeadlineImpl.fromJson;
+
+  @override
+  String get tripId;
+  @override
+  BookingKind get kind;
+  @override
+  DateTime get deadlineAt;
+  @override
+  String? get setBy;
+  @override
+  DateTime? get createdAt;
+  @override
+  DateTime? get updatedAt;
+  @override
+  @JsonKey(ignore: true)
+  _$$TripBookingDeadlineImplCopyWith<_$TripBookingDeadlineImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+TripLockinStatus _$TripLockinStatusFromJson(Map<String, dynamic> json) {
+  return _TripLockinStatus.fromJson(json);
+}
+
+/// @nodoc
+mixin _$TripLockinStatus {
+  String get tripId => throw _privateConstructorUsedError;
+  int get squadSize => throw _privateConstructorUsedError;
+  int get flightsBooked => throw _privateConstructorUsedError;
+  int get accommodationBooked => throw _privateConstructorUsedError;
+  int? get flightLockinPct => throw _privateConstructorUsedError;
+  int? get accommodationLockinPct => throw _privateConstructorUsedError;
+  DateTime? get flightDeadline => throw _privateConstructorUsedError;
+  DateTime? get accommodationDeadline => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $TripLockinStatusCopyWith<TripLockinStatus> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TripLockinStatusCopyWith<$Res> {
+  factory $TripLockinStatusCopyWith(
+          TripLockinStatus value, $Res Function(TripLockinStatus) then) =
+      _$TripLockinStatusCopyWithImpl<$Res, TripLockinStatus>;
+  @useResult
+  $Res call(
+      {String tripId,
+      int squadSize,
+      int flightsBooked,
+      int accommodationBooked,
+      int? flightLockinPct,
+      int? accommodationLockinPct,
+      DateTime? flightDeadline,
+      DateTime? accommodationDeadline});
+}
+
+/// @nodoc
+class _$TripLockinStatusCopyWithImpl<$Res, $Val extends TripLockinStatus>
+    implements $TripLockinStatusCopyWith<$Res> {
+  _$TripLockinStatusCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? tripId = null,
+    Object? squadSize = null,
+    Object? flightsBooked = null,
+    Object? accommodationBooked = null,
+    Object? flightLockinPct = freezed,
+    Object? accommodationLockinPct = freezed,
+    Object? flightDeadline = freezed,
+    Object? accommodationDeadline = freezed,
+  }) {
+    return _then(_value.copyWith(
+      tripId: null == tripId
+          ? _value.tripId
+          : tripId // ignore: cast_nullable_to_non_nullable
+              as String,
+      squadSize: null == squadSize
+          ? _value.squadSize
+          : squadSize // ignore: cast_nullable_to_non_nullable
+              as int,
+      flightsBooked: null == flightsBooked
+          ? _value.flightsBooked
+          : flightsBooked // ignore: cast_nullable_to_non_nullable
+              as int,
+      accommodationBooked: null == accommodationBooked
+          ? _value.accommodationBooked
+          : accommodationBooked // ignore: cast_nullable_to_non_nullable
+              as int,
+      flightLockinPct: freezed == flightLockinPct
+          ? _value.flightLockinPct
+          : flightLockinPct // ignore: cast_nullable_to_non_nullable
+              as int?,
+      accommodationLockinPct: freezed == accommodationLockinPct
+          ? _value.accommodationLockinPct
+          : accommodationLockinPct // ignore: cast_nullable_to_non_nullable
+              as int?,
+      flightDeadline: freezed == flightDeadline
+          ? _value.flightDeadline
+          : flightDeadline // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      accommodationDeadline: freezed == accommodationDeadline
+          ? _value.accommodationDeadline
+          : accommodationDeadline // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$TripLockinStatusImplCopyWith<$Res>
+    implements $TripLockinStatusCopyWith<$Res> {
+  factory _$$TripLockinStatusImplCopyWith(_$TripLockinStatusImpl value,
+          $Res Function(_$TripLockinStatusImpl) then) =
+      __$$TripLockinStatusImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String tripId,
+      int squadSize,
+      int flightsBooked,
+      int accommodationBooked,
+      int? flightLockinPct,
+      int? accommodationLockinPct,
+      DateTime? flightDeadline,
+      DateTime? accommodationDeadline});
+}
+
+/// @nodoc
+class __$$TripLockinStatusImplCopyWithImpl<$Res>
+    extends _$TripLockinStatusCopyWithImpl<$Res, _$TripLockinStatusImpl>
+    implements _$$TripLockinStatusImplCopyWith<$Res> {
+  __$$TripLockinStatusImplCopyWithImpl(_$TripLockinStatusImpl _value,
+      $Res Function(_$TripLockinStatusImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? tripId = null,
+    Object? squadSize = null,
+    Object? flightsBooked = null,
+    Object? accommodationBooked = null,
+    Object? flightLockinPct = freezed,
+    Object? accommodationLockinPct = freezed,
+    Object? flightDeadline = freezed,
+    Object? accommodationDeadline = freezed,
+  }) {
+    return _then(_$TripLockinStatusImpl(
+      tripId: null == tripId
+          ? _value.tripId
+          : tripId // ignore: cast_nullable_to_non_nullable
+              as String,
+      squadSize: null == squadSize
+          ? _value.squadSize
+          : squadSize // ignore: cast_nullable_to_non_nullable
+              as int,
+      flightsBooked: null == flightsBooked
+          ? _value.flightsBooked
+          : flightsBooked // ignore: cast_nullable_to_non_nullable
+              as int,
+      accommodationBooked: null == accommodationBooked
+          ? _value.accommodationBooked
+          : accommodationBooked // ignore: cast_nullable_to_non_nullable
+              as int,
+      flightLockinPct: freezed == flightLockinPct
+          ? _value.flightLockinPct
+          : flightLockinPct // ignore: cast_nullable_to_non_nullable
+              as int?,
+      accommodationLockinPct: freezed == accommodationLockinPct
+          ? _value.accommodationLockinPct
+          : accommodationLockinPct // ignore: cast_nullable_to_non_nullable
+              as int?,
+      flightDeadline: freezed == flightDeadline
+          ? _value.flightDeadline
+          : flightDeadline // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      accommodationDeadline: freezed == accommodationDeadline
+          ? _value.accommodationDeadline
+          : accommodationDeadline // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TripLockinStatusImpl implements _TripLockinStatus {
+  const _$TripLockinStatusImpl(
+      {required this.tripId,
+      this.squadSize = 0,
+      this.flightsBooked = 0,
+      this.accommodationBooked = 0,
+      this.flightLockinPct,
+      this.accommodationLockinPct,
+      this.flightDeadline,
+      this.accommodationDeadline});
+
+  factory _$TripLockinStatusImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TripLockinStatusImplFromJson(json);
+
+  @override
+  final String tripId;
+  @override
+  @JsonKey()
+  final int squadSize;
+  @override
+  @JsonKey()
+  final int flightsBooked;
+  @override
+  @JsonKey()
+  final int accommodationBooked;
+  @override
+  final int? flightLockinPct;
+  @override
+  final int? accommodationLockinPct;
+  @override
+  final DateTime? flightDeadline;
+  @override
+  final DateTime? accommodationDeadline;
+
+  @override
+  String toString() {
+    return 'TripLockinStatus(tripId: $tripId, squadSize: $squadSize, flightsBooked: $flightsBooked, accommodationBooked: $accommodationBooked, flightLockinPct: $flightLockinPct, accommodationLockinPct: $accommodationLockinPct, flightDeadline: $flightDeadline, accommodationDeadline: $accommodationDeadline)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TripLockinStatusImpl &&
+            (identical(other.tripId, tripId) || other.tripId == tripId) &&
+            (identical(other.squadSize, squadSize) ||
+                other.squadSize == squadSize) &&
+            (identical(other.flightsBooked, flightsBooked) ||
+                other.flightsBooked == flightsBooked) &&
+            (identical(other.accommodationBooked, accommodationBooked) ||
+                other.accommodationBooked == accommodationBooked) &&
+            (identical(other.flightLockinPct, flightLockinPct) ||
+                other.flightLockinPct == flightLockinPct) &&
+            (identical(other.accommodationLockinPct, accommodationLockinPct) ||
+                other.accommodationLockinPct == accommodationLockinPct) &&
+            (identical(other.flightDeadline, flightDeadline) ||
+                other.flightDeadline == flightDeadline) &&
+            (identical(other.accommodationDeadline, accommodationDeadline) ||
+                other.accommodationDeadline == accommodationDeadline));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      tripId,
+      squadSize,
+      flightsBooked,
+      accommodationBooked,
+      flightLockinPct,
+      accommodationLockinPct,
+      flightDeadline,
+      accommodationDeadline);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TripLockinStatusImplCopyWith<_$TripLockinStatusImpl> get copyWith =>
+      __$$TripLockinStatusImplCopyWithImpl<_$TripLockinStatusImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TripLockinStatusImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _TripLockinStatus implements TripLockinStatus {
+  const factory _TripLockinStatus(
+      {required final String tripId,
+      final int squadSize,
+      final int flightsBooked,
+      final int accommodationBooked,
+      final int? flightLockinPct,
+      final int? accommodationLockinPct,
+      final DateTime? flightDeadline,
+      final DateTime? accommodationDeadline}) = _$TripLockinStatusImpl;
+
+  factory _TripLockinStatus.fromJson(Map<String, dynamic> json) =
+      _$TripLockinStatusImpl.fromJson;
+
+  @override
+  String get tripId;
+  @override
+  int get squadSize;
+  @override
+  int get flightsBooked;
+  @override
+  int get accommodationBooked;
+  @override
+  int? get flightLockinPct;
+  @override
+  int? get accommodationLockinPct;
+  @override
+  DateTime? get flightDeadline;
+  @override
+  DateTime? get accommodationDeadline;
+  @override
+  @JsonKey(ignore: true)
+  _$$TripLockinStatusImplCopyWith<_$TripLockinStatusImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
 TripRecommendation _$TripRecommendationFromJson(Map<String, dynamic> json) {
   return _TripRecommendation.fromJson(json);
 }

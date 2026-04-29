@@ -874,6 +874,156 @@ Map<String, dynamic> _$$MatchProfileImplToJson(_$MatchProfileImpl instance) =>
       'isMatch': instance.isMatch,
     };
 
+_$MemberArrivalPlanImpl _$$MemberArrivalPlanImplFromJson(
+        Map<String, dynamic> json) =>
+    _$MemberArrivalPlanImpl(
+      id: json['id'] as String,
+      tripId: json['tripId'] as String,
+      userId: json['userId'] as String,
+      departureCity: json['departureCity'] as String?,
+      departureIata: json['departureIata'] as String?,
+      arrivalIata: json['arrivalIata'] as String?,
+      outboundAt: json['outboundAt'] == null
+          ? null
+          : DateTime.parse(json['outboundAt'] as String),
+      airline: json['airline'] as String?,
+      flightNumber: json['flightNumber'] as String?,
+      bookingRef: json['bookingRef'] as String?,
+      state: $enumDecodeNullable(_$ArrivalPlanStateEnumMap, json['state']) ??
+          ArrivalPlanState.not_set,
+      isAnchor: json['isAnchor'] as bool? ?? false,
+      bookedAt: json['bookedAt'] == null
+          ? null
+          : DateTime.parse(json['bookedAt'] as String),
+      createdAt: json['createdAt'] == null
+          ? null
+          : DateTime.parse(json['createdAt'] as String),
+      updatedAt: json['updatedAt'] == null
+          ? null
+          : DateTime.parse(json['updatedAt'] as String),
+    );
+
+Map<String, dynamic> _$$MemberArrivalPlanImplToJson(
+        _$MemberArrivalPlanImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'tripId': instance.tripId,
+      'userId': instance.userId,
+      'departureCity': instance.departureCity,
+      'departureIata': instance.departureIata,
+      'arrivalIata': instance.arrivalIata,
+      'outboundAt': instance.outboundAt?.toIso8601String(),
+      'airline': instance.airline,
+      'flightNumber': instance.flightNumber,
+      'bookingRef': instance.bookingRef,
+      'state': _$ArrivalPlanStateEnumMap[instance.state]!,
+      'isAnchor': instance.isAnchor,
+      'bookedAt': instance.bookedAt?.toIso8601String(),
+      'createdAt': instance.createdAt?.toIso8601String(),
+      'updatedAt': instance.updatedAt?.toIso8601String(),
+    };
+
+const _$ArrivalPlanStateEnumMap = {
+  ArrivalPlanState.not_set: 'not_set',
+  ArrivalPlanState.searching: 'searching',
+  ArrivalPlanState.booked: 'booked',
+  ArrivalPlanState.cancelled: 'cancelled',
+};
+
+_$BookingConfirmationImpl _$$BookingConfirmationImplFromJson(
+        Map<String, dynamic> json) =>
+    _$BookingConfirmationImpl(
+      id: json['id'] as String,
+      tripId: json['tripId'] as String,
+      userId: json['userId'] as String,
+      kind: $enumDecode(_$BookingKindEnumMap, json['kind']),
+      recommendationId: json['recommendationId'] as String?,
+      arrivalPlanId: json['arrivalPlanId'] as String?,
+      totalCents: (json['totalCents'] as num?)?.toInt(),
+      currency: json['currency'] as String? ?? 'USD',
+      notes: json['notes'] as String?,
+      confirmedAt: json['confirmedAt'] == null
+          ? null
+          : DateTime.parse(json['confirmedAt'] as String),
+    );
+
+Map<String, dynamic> _$$BookingConfirmationImplToJson(
+        _$BookingConfirmationImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'tripId': instance.tripId,
+      'userId': instance.userId,
+      'kind': _$BookingKindEnumMap[instance.kind]!,
+      'recommendationId': instance.recommendationId,
+      'arrivalPlanId': instance.arrivalPlanId,
+      'totalCents': instance.totalCents,
+      'currency': instance.currency,
+      'notes': instance.notes,
+      'confirmedAt': instance.confirmedAt?.toIso8601String(),
+    };
+
+const _$BookingKindEnumMap = {
+  BookingKind.flight: 'flight',
+  BookingKind.accommodation: 'accommodation',
+};
+
+_$TripBookingDeadlineImpl _$$TripBookingDeadlineImplFromJson(
+        Map<String, dynamic> json) =>
+    _$TripBookingDeadlineImpl(
+      tripId: json['tripId'] as String,
+      kind: $enumDecode(_$BookingKindEnumMap, json['kind']),
+      deadlineAt: DateTime.parse(json['deadlineAt'] as String),
+      setBy: json['setBy'] as String?,
+      createdAt: json['createdAt'] == null
+          ? null
+          : DateTime.parse(json['createdAt'] as String),
+      updatedAt: json['updatedAt'] == null
+          ? null
+          : DateTime.parse(json['updatedAt'] as String),
+    );
+
+Map<String, dynamic> _$$TripBookingDeadlineImplToJson(
+        _$TripBookingDeadlineImpl instance) =>
+    <String, dynamic>{
+      'tripId': instance.tripId,
+      'kind': _$BookingKindEnumMap[instance.kind]!,
+      'deadlineAt': instance.deadlineAt.toIso8601String(),
+      'setBy': instance.setBy,
+      'createdAt': instance.createdAt?.toIso8601String(),
+      'updatedAt': instance.updatedAt?.toIso8601String(),
+    };
+
+_$TripLockinStatusImpl _$$TripLockinStatusImplFromJson(
+        Map<String, dynamic> json) =>
+    _$TripLockinStatusImpl(
+      tripId: json['tripId'] as String,
+      squadSize: (json['squadSize'] as num?)?.toInt() ?? 0,
+      flightsBooked: (json['flightsBooked'] as num?)?.toInt() ?? 0,
+      accommodationBooked: (json['accommodationBooked'] as num?)?.toInt() ?? 0,
+      flightLockinPct: (json['flightLockinPct'] as num?)?.toInt(),
+      accommodationLockinPct: (json['accommodationLockinPct'] as num?)?.toInt(),
+      flightDeadline: json['flightDeadline'] == null
+          ? null
+          : DateTime.parse(json['flightDeadline'] as String),
+      accommodationDeadline: json['accommodationDeadline'] == null
+          ? null
+          : DateTime.parse(json['accommodationDeadline'] as String),
+    );
+
+Map<String, dynamic> _$$TripLockinStatusImplToJson(
+        _$TripLockinStatusImpl instance) =>
+    <String, dynamic>{
+      'tripId': instance.tripId,
+      'squadSize': instance.squadSize,
+      'flightsBooked': instance.flightsBooked,
+      'accommodationBooked': instance.accommodationBooked,
+      'flightLockinPct': instance.flightLockinPct,
+      'accommodationLockinPct': instance.accommodationLockinPct,
+      'flightDeadline': instance.flightDeadline?.toIso8601String(),
+      'accommodationDeadline':
+          instance.accommodationDeadline?.toIso8601String(),
+    };
+
 _$TripRecommendationImpl _$$TripRecommendationImplFromJson(
         Map<String, dynamic> json) =>
     _$TripRecommendationImpl(

@@ -27,6 +27,7 @@ import 'tabs/today_tab.dart';
 import 'tabs/memories_tab.dart';
 import 'tabs/stamp_tab.dart';
 import 'tabs/stays_eats_tab.dart';
+import 'tabs/book_tab.dart';
 import '../scout/scout_tab_screen.dart';
 
 /// Phase-aware container for a trip. The tab set changes as
@@ -226,6 +227,7 @@ class _TripSpaceInnerState extends ConsumerState<_TripSpaceInner>
         return const [
           _TabDef('plan',  'plan'),
           _TabDef('stays', 'stays + eats'),
+          _TabDef('book',  'book'),
           _TabDef('chat',  'chat'),
           _TabDef('pack',  'pack'),
           _TabDef('tips',  'tips'),
@@ -239,6 +241,7 @@ class _TripSpaceInnerState extends ConsumerState<_TripSpaceInner>
           _TabDef('today',  'today'),
           _TabDef('plan',   'plan'),
           _TabDef('stays',  'stays + eats'),
+          _TabDef('book',   'book'),
           _TabDef('chat',   'chat'),
           _TabDef('pack',   'pack'),
           _TabDef('tips',   'tips'),
@@ -411,6 +414,7 @@ class _TripSpaceInnerState extends ConsumerState<_TripSpaceInner>
       case 'vote':     return VoteTab(trip: trip);
       case 'plan':     return PlanTab(trip: trip);
       case 'stays':    return StaysEatsTab(trip: trip);
+      case 'book':     return BookTab(trip: trip);
       case 'pack':     return PackTab(trip: trip);
       case 'tips':     return TipsTab(trip: trip);
       case 'squad':    return SquadTab(trip: trip);

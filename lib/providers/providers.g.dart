@@ -1918,6 +1918,564 @@ class _TripRecommendationsProviderElement
   String get tripId => (origin as TripRecommendationsProvider).tripId;
 }
 
+String _$arrivalPlansHash() => r'485a48279c07847a994a39660f2aaf35461e40b2';
+
+/// See also [arrivalPlans].
+@ProviderFor(arrivalPlans)
+const arrivalPlansProvider = ArrivalPlansFamily();
+
+/// See also [arrivalPlans].
+class ArrivalPlansFamily extends Family<AsyncValue<List<MemberArrivalPlan>>> {
+  /// See also [arrivalPlans].
+  const ArrivalPlansFamily();
+
+  /// See also [arrivalPlans].
+  ArrivalPlansProvider call(
+    String tripId,
+  ) {
+    return ArrivalPlansProvider(
+      tripId,
+    );
+  }
+
+  @override
+  ArrivalPlansProvider getProviderOverride(
+    covariant ArrivalPlansProvider provider,
+  ) {
+    return call(
+      provider.tripId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'arrivalPlansProvider';
+}
+
+/// See also [arrivalPlans].
+class ArrivalPlansProvider
+    extends AutoDisposeStreamProvider<List<MemberArrivalPlan>> {
+  /// See also [arrivalPlans].
+  ArrivalPlansProvider(
+    String tripId,
+  ) : this._internal(
+          (ref) => arrivalPlans(
+            ref as ArrivalPlansRef,
+            tripId,
+          ),
+          from: arrivalPlansProvider,
+          name: r'arrivalPlansProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$arrivalPlansHash,
+          dependencies: ArrivalPlansFamily._dependencies,
+          allTransitiveDependencies:
+              ArrivalPlansFamily._allTransitiveDependencies,
+          tripId: tripId,
+        );
+
+  ArrivalPlansProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.tripId,
+  }) : super.internal();
+
+  final String tripId;
+
+  @override
+  Override overrideWith(
+    Stream<List<MemberArrivalPlan>> Function(ArrivalPlansRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ArrivalPlansProvider._internal(
+        (ref) => create(ref as ArrivalPlansRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        tripId: tripId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeStreamProviderElement<List<MemberArrivalPlan>> createElement() {
+    return _ArrivalPlansProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ArrivalPlansProvider && other.tripId == tripId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, tripId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin ArrivalPlansRef on AutoDisposeStreamProviderRef<List<MemberArrivalPlan>> {
+  /// The parameter `tripId` of this provider.
+  String get tripId;
+}
+
+class _ArrivalPlansProviderElement
+    extends AutoDisposeStreamProviderElement<List<MemberArrivalPlan>>
+    with ArrivalPlansRef {
+  _ArrivalPlansProviderElement(super.provider);
+
+  @override
+  String get tripId => (origin as ArrivalPlansProvider).tripId;
+}
+
+String _$bookingConfirmationsHash() =>
+    r'fac04c8d532553753ff3a0197977160325a909de';
+
+/// See also [bookingConfirmations].
+@ProviderFor(bookingConfirmations)
+const bookingConfirmationsProvider = BookingConfirmationsFamily();
+
+/// See also [bookingConfirmations].
+class BookingConfirmationsFamily
+    extends Family<AsyncValue<List<BookingConfirmation>>> {
+  /// See also [bookingConfirmations].
+  const BookingConfirmationsFamily();
+
+  /// See also [bookingConfirmations].
+  BookingConfirmationsProvider call(
+    String tripId,
+  ) {
+    return BookingConfirmationsProvider(
+      tripId,
+    );
+  }
+
+  @override
+  BookingConfirmationsProvider getProviderOverride(
+    covariant BookingConfirmationsProvider provider,
+  ) {
+    return call(
+      provider.tripId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'bookingConfirmationsProvider';
+}
+
+/// See also [bookingConfirmations].
+class BookingConfirmationsProvider
+    extends AutoDisposeStreamProvider<List<BookingConfirmation>> {
+  /// See also [bookingConfirmations].
+  BookingConfirmationsProvider(
+    String tripId,
+  ) : this._internal(
+          (ref) => bookingConfirmations(
+            ref as BookingConfirmationsRef,
+            tripId,
+          ),
+          from: bookingConfirmationsProvider,
+          name: r'bookingConfirmationsProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$bookingConfirmationsHash,
+          dependencies: BookingConfirmationsFamily._dependencies,
+          allTransitiveDependencies:
+              BookingConfirmationsFamily._allTransitiveDependencies,
+          tripId: tripId,
+        );
+
+  BookingConfirmationsProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.tripId,
+  }) : super.internal();
+
+  final String tripId;
+
+  @override
+  Override overrideWith(
+    Stream<List<BookingConfirmation>> Function(BookingConfirmationsRef provider)
+        create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: BookingConfirmationsProvider._internal(
+        (ref) => create(ref as BookingConfirmationsRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        tripId: tripId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeStreamProviderElement<List<BookingConfirmation>> createElement() {
+    return _BookingConfirmationsProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is BookingConfirmationsProvider && other.tripId == tripId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, tripId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin BookingConfirmationsRef
+    on AutoDisposeStreamProviderRef<List<BookingConfirmation>> {
+  /// The parameter `tripId` of this provider.
+  String get tripId;
+}
+
+class _BookingConfirmationsProviderElement
+    extends AutoDisposeStreamProviderElement<List<BookingConfirmation>>
+    with BookingConfirmationsRef {
+  _BookingConfirmationsProviderElement(super.provider);
+
+  @override
+  String get tripId => (origin as BookingConfirmationsProvider).tripId;
+}
+
+String _$tripBookingDeadlinesHash() =>
+    r'b7360d89b1c26e6fb736ff816764bab70df03209';
+
+/// See also [tripBookingDeadlines].
+@ProviderFor(tripBookingDeadlines)
+const tripBookingDeadlinesProvider = TripBookingDeadlinesFamily();
+
+/// See also [tripBookingDeadlines].
+class TripBookingDeadlinesFamily
+    extends Family<AsyncValue<List<TripBookingDeadline>>> {
+  /// See also [tripBookingDeadlines].
+  const TripBookingDeadlinesFamily();
+
+  /// See also [tripBookingDeadlines].
+  TripBookingDeadlinesProvider call(
+    String tripId,
+  ) {
+    return TripBookingDeadlinesProvider(
+      tripId,
+    );
+  }
+
+  @override
+  TripBookingDeadlinesProvider getProviderOverride(
+    covariant TripBookingDeadlinesProvider provider,
+  ) {
+    return call(
+      provider.tripId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'tripBookingDeadlinesProvider';
+}
+
+/// See also [tripBookingDeadlines].
+class TripBookingDeadlinesProvider
+    extends AutoDisposeStreamProvider<List<TripBookingDeadline>> {
+  /// See also [tripBookingDeadlines].
+  TripBookingDeadlinesProvider(
+    String tripId,
+  ) : this._internal(
+          (ref) => tripBookingDeadlines(
+            ref as TripBookingDeadlinesRef,
+            tripId,
+          ),
+          from: tripBookingDeadlinesProvider,
+          name: r'tripBookingDeadlinesProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$tripBookingDeadlinesHash,
+          dependencies: TripBookingDeadlinesFamily._dependencies,
+          allTransitiveDependencies:
+              TripBookingDeadlinesFamily._allTransitiveDependencies,
+          tripId: tripId,
+        );
+
+  TripBookingDeadlinesProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.tripId,
+  }) : super.internal();
+
+  final String tripId;
+
+  @override
+  Override overrideWith(
+    Stream<List<TripBookingDeadline>> Function(TripBookingDeadlinesRef provider)
+        create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: TripBookingDeadlinesProvider._internal(
+        (ref) => create(ref as TripBookingDeadlinesRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        tripId: tripId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeStreamProviderElement<List<TripBookingDeadline>> createElement() {
+    return _TripBookingDeadlinesProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TripBookingDeadlinesProvider && other.tripId == tripId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, tripId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin TripBookingDeadlinesRef
+    on AutoDisposeStreamProviderRef<List<TripBookingDeadline>> {
+  /// The parameter `tripId` of this provider.
+  String get tripId;
+}
+
+class _TripBookingDeadlinesProviderElement
+    extends AutoDisposeStreamProviderElement<List<TripBookingDeadline>>
+    with TripBookingDeadlinesRef {
+  _TripBookingDeadlinesProviderElement(super.provider);
+
+  @override
+  String get tripId => (origin as TripBookingDeadlinesProvider).tripId;
+}
+
+String _$tripLockinStatusHash() => r'abcbc5d74a3bb01789a4143be48479458a270565';
+
+/// Lock-in status. The view itself isn't subscribable via Supabase
+/// realtime (views aren't published), but its underlying tables are.
+/// We subscribe to those, debounce-refetch the view, and stream the
+/// result. ref.watch on bookingConfirmationsProvider is the trigger.
+///
+/// Copied from [tripLockinStatus].
+@ProviderFor(tripLockinStatus)
+const tripLockinStatusProvider = TripLockinStatusFamily();
+
+/// Lock-in status. The view itself isn't subscribable via Supabase
+/// realtime (views aren't published), but its underlying tables are.
+/// We subscribe to those, debounce-refetch the view, and stream the
+/// result. ref.watch on bookingConfirmationsProvider is the trigger.
+///
+/// Copied from [tripLockinStatus].
+class TripLockinStatusFamily extends Family<AsyncValue<TripLockinStatus?>> {
+  /// Lock-in status. The view itself isn't subscribable via Supabase
+  /// realtime (views aren't published), but its underlying tables are.
+  /// We subscribe to those, debounce-refetch the view, and stream the
+  /// result. ref.watch on bookingConfirmationsProvider is the trigger.
+  ///
+  /// Copied from [tripLockinStatus].
+  const TripLockinStatusFamily();
+
+  /// Lock-in status. The view itself isn't subscribable via Supabase
+  /// realtime (views aren't published), but its underlying tables are.
+  /// We subscribe to those, debounce-refetch the view, and stream the
+  /// result. ref.watch on bookingConfirmationsProvider is the trigger.
+  ///
+  /// Copied from [tripLockinStatus].
+  TripLockinStatusProvider call(
+    String tripId,
+  ) {
+    return TripLockinStatusProvider(
+      tripId,
+    );
+  }
+
+  @override
+  TripLockinStatusProvider getProviderOverride(
+    covariant TripLockinStatusProvider provider,
+  ) {
+    return call(
+      provider.tripId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'tripLockinStatusProvider';
+}
+
+/// Lock-in status. The view itself isn't subscribable via Supabase
+/// realtime (views aren't published), but its underlying tables are.
+/// We subscribe to those, debounce-refetch the view, and stream the
+/// result. ref.watch on bookingConfirmationsProvider is the trigger.
+///
+/// Copied from [tripLockinStatus].
+class TripLockinStatusProvider
+    extends AutoDisposeFutureProvider<TripLockinStatus?> {
+  /// Lock-in status. The view itself isn't subscribable via Supabase
+  /// realtime (views aren't published), but its underlying tables are.
+  /// We subscribe to those, debounce-refetch the view, and stream the
+  /// result. ref.watch on bookingConfirmationsProvider is the trigger.
+  ///
+  /// Copied from [tripLockinStatus].
+  TripLockinStatusProvider(
+    String tripId,
+  ) : this._internal(
+          (ref) => tripLockinStatus(
+            ref as TripLockinStatusRef,
+            tripId,
+          ),
+          from: tripLockinStatusProvider,
+          name: r'tripLockinStatusProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$tripLockinStatusHash,
+          dependencies: TripLockinStatusFamily._dependencies,
+          allTransitiveDependencies:
+              TripLockinStatusFamily._allTransitiveDependencies,
+          tripId: tripId,
+        );
+
+  TripLockinStatusProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.tripId,
+  }) : super.internal();
+
+  final String tripId;
+
+  @override
+  Override overrideWith(
+    FutureOr<TripLockinStatus?> Function(TripLockinStatusRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: TripLockinStatusProvider._internal(
+        (ref) => create(ref as TripLockinStatusRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        tripId: tripId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<TripLockinStatus?> createElement() {
+    return _TripLockinStatusProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TripLockinStatusProvider && other.tripId == tripId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, tripId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin TripLockinStatusRef on AutoDisposeFutureProviderRef<TripLockinStatus?> {
+  /// The parameter `tripId` of this provider.
+  String get tripId;
+}
+
+class _TripLockinStatusProviderElement
+    extends AutoDisposeFutureProviderElement<TripLockinStatus?>
+    with TripLockinStatusRef {
+  _TripLockinStatusProviderElement(super.provider);
+
+  @override
+  String get tripId => (origin as TripLockinStatusProvider).tripId;
+}
+
 String _$tripCreationHash() => r'4c89df0020c12e584e335e8e05ff6c3328b20ee7';
 
 /// See also [TripCreation].

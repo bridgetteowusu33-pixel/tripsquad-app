@@ -234,6 +234,45 @@ enum StaysEatsScope { stays, eats }
 final staysEatsScopeProvider =
     StateProvider<StaysEatsScope>((ref) => StaysEatsScope.stays);
 
+// ── Booking layer providers (v1.2) ───────────────────────────
+
+@riverpod
+Stream<List<MemberArrivalPlan>> arrivalPlans(
+    ArrivalPlansRef ref, String tripId) {
+  return ref.read(bookingServiceProvider).watchArrivalPlans(tripId);
+}
+
+@riverpod
+Stream<List<BookingConfirmation>> bookingConfirmations(
+    BookingConfirmationsRef ref, String tripId) {
+  return ref.read(bookingServiceProvider).watchConfirmations(tripId);
+}
+
+@riverpod
+Stream<List<TripBookingDeadline>> tripBookingDeadlines(
+    TripBookingDeadlinesRef ref, String tripId) {
+  return ref.read(bookingServiceProvider).watchDeadlines(tripId);
+}
+
+/// Lock-in status. The view itself isn't subscribable via Supabase
+/// realtime (views aren't published), but its underlying tables are.
+/// We subscribe to those, debounce-refetch the view, and stream the
+/// result. ref.watch on bookingConfirmationsProvider is the trigger.
+@riverpod
+Future<TripLockinStatus?> tripLockinStatus(
+    TripLockinStatusRef ref, String tripId) async {
+  // Re-fetch when confirmations or arrival plans change.
+  ref.watch(bookingConfirmationsProvider(tripId));
+  ref.watch(arrivalPlansProvider(tripId));
+  return ref.read(bookingServiceProvider).fetchLockinStatus(tripId);
+}
+
+// ── Book tab pill toggle (flights | accommodation) ───────────
+enum BookScope { flights, accommodation }
+
+final bookScopeProvider =
+    StateProvider<BookScope>((ref) => BookScope.flights);
+
 // ── Trip-space tab-jump request ──────────────────────────────
 // One-shot signal used to ask Trip Space to switch its top-level
 // tab from inside a child tab. The seq field guarantees each new

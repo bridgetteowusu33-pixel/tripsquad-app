@@ -216,10 +216,36 @@ function mapsUrlFor(name: string, destination: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 }
 
-function bookingUrlFor(name: string, destination: string): string {
-  // Phase 1: search URL with no affiliate ID. Phase 3 swaps in &aid=...
-  const q = `${name}, ${destination}`;
-  return `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(q)}`;
+// Build the booking deep link via our affiliate_redirect endpoint
+// so every click is attributed and tracked. The redirect's smart
+// `best_hotel` routing picks Booking.com (when its AID is set) or
+// Hotellook via Travelpayouts (always available as marker is set).
+// Trip + recommendation IDs land in affiliate_clickthroughs for
+// per-trip conversion analytics.
+function bookingUrlFor(
+  name: string,
+  destination: string,
+  tripId: string,
+  recRank: number,
+  checkIn: string | null,
+  checkOut: string | null,
+  groupAdults: number,
+): string {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const search: Record<string, string> = {
+    ss: `${name}, ${destination}`,
+    group_adults: String(groupAdults),
+  };
+  if (checkIn) search.checkin = checkIn;
+  if (checkOut) search.checkout = checkOut;
+  const qB64 = btoa(JSON.stringify(search));
+  const u = new URL(`${supabaseUrl}/functions/v1/affiliate_redirect`);
+  u.searchParams.set("partner", "best_hotel");
+  u.searchParams.set("kind", "hotel");
+  u.searchParams.set("trip", tripId);
+  u.searchParams.set("target", `hotel:${recRank}`);
+  u.searchParams.set("q", qB64);
+  return u.toString();
 }
 
 // Resolve the trip's selected_destination against destination_guides.
@@ -475,7 +501,15 @@ Deno.serve(async (req) => {
         reason: h.reason ?? null,
         day_anchor: typeof h.day_anchor === "number" ? h.day_anchor : null,
         maps_url: mapsUrlFor(h.name, dest),
-        booking_url: bookingUrlFor(h.name, dest),
+        booking_url: bookingUrlFor(
+          h.name,
+          dest,
+          trip_id,
+          i,
+          trip.start_date ?? null,
+          trip.end_date ?? null,
+          squadSize,
+        ),
       });
     }
 

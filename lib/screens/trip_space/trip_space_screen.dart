@@ -28,6 +28,7 @@ import 'tabs/memories_tab.dart';
 import 'tabs/stamp_tab.dart';
 import 'tabs/stays_eats_tab.dart';
 import 'tabs/book_tab.dart';
+import 'widgets/lockin_chip.dart';
 import '../scout/scout_tab_screen.dart';
 
 /// Phase-aware container for a trip. The tab set changes as
@@ -360,6 +361,11 @@ class _TripSpaceInnerState extends ConsumerState<_TripSpaceInner>
       body: Column(children: [
         _CoverHero(trip: widget.trip),
         _VibeStrip(trip: widget.trip),
+        // Lock-in chip — visible across every tab once the trip hits
+        // revealed/planning/live. Tap jumps to the book tab. Hidden
+        // pre-reveal and on solo single-host trips. Self-collapses
+        // when squad_size is 0.
+        LockinChip(trip: widget.trip),
         // Tab bar aligned to the same content width as the tab body
         // below it. On iPad this spreads the tabs evenly instead of
         // clustering them against the left edge.

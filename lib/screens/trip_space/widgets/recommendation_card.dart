@@ -9,9 +9,21 @@ import '../../../widgets/widgets.dart';
 /// Card for a single hotel or restaurant recommendation. Same shell
 /// for both — variants only differ in which outbound buttons render
 /// (hotels get a Booking.com search button; restaurants don't).
+///
+/// Group-stay tracker: when [bookedCount] > 0 on a hotel card we
+/// surface a badge ("4 of 6 booked here"). Drives the social-proof
+/// signal that the squad is converging — celebration triggers at
+/// >= 4 squad members on the same place.
 class RecommendationCard extends StatelessWidget {
-  const RecommendationCard({super.key, required this.rec});
+  const RecommendationCard({
+    super.key,
+    required this.rec,
+    this.bookedCount = 0,
+    this.squadSize = 0,
+  });
   final TripRecommendation rec;
+  final int bookedCount;
+  final int squadSize;
 
   bool get _isHotel => rec.kind == RecommendationKind.hotel;
 
@@ -113,6 +125,17 @@ class RecommendationCard extends StatelessWidget {
                   ),
                 ],
 
+                // Group-stay tracker. Hotels only — restaurants
+                // aren't booking-tracked individually. Surfaces social
+                // proof and trips a celebration tone at 4+.
+                if (_isHotel && bookedCount > 0) ...[
+                  const SizedBox(height: 10),
+                  _GroupStayBadge(
+                    bookedCount: bookedCount,
+                    squadSize: squadSize,
+                  ),
+                ],
+
                 // Action row — Maps, Booking (hotels)
                 const SizedBox(height: 14),
                 Row(
@@ -161,6 +184,58 @@ class RecommendationCard extends StatelessWidget {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+}
+
+/// Group-stay social-proof badge. Below 4 squadmates: muted neutral
+/// tone ("3 of 6 booked here · join them"). At 4+: lime celebration
+/// ("🎉 4 of 6 booked here — squad is converging"). The 4-person
+/// threshold matches the typical "we have a quorum" intuition.
+class _GroupStayBadge extends StatelessWidget {
+  const _GroupStayBadge({
+    required this.bookedCount,
+    required this.squadSize,
+  });
+  final int bookedCount;
+  final int squadSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final celebrate = bookedCount >= 4;
+    final accent = celebrate ? TSColors.lime : TSColors.text2;
+    final bgColor = celebrate
+        ? TSColors.lime.withValues(alpha: 0.10)
+        : TSColors.s2;
+    final borderColor = celebrate
+        ? TSColors.lime.withValues(alpha: 0.35)
+        : TSColors.border;
+    final total = squadSize > 0 ? '$bookedCount of $squadSize' : '$bookedCount';
+    final caption = celebrate
+        ? '$total booked here — squad is converging'
+        : '$total booked here · join them';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(children: [
+        Text(celebrate ? '🎉' : '🛏️',
+            style: const TextStyle(fontSize: 14)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            caption,
+            style: TSTextStyles.body(
+              size: 12,
+              color: accent,
+              weight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ]),
+    );
   }
 }
 

@@ -113,6 +113,36 @@ class _BookTabState extends ConsumerState<BookTab> {
     if (result == true && mounted) TSHaptics.success();
   }
 
+  /// Host action: ping unset squad members. Returns count for the
+  /// snackbar copy ("nudged 3 squadmates"). Backed by the
+  /// nudge_unset_members RPC which throttles per recipient (24h).
+  Future<void> _nudgeUnset(BookingKind kind) async {
+    TSHaptics.ctaTap();
+    try {
+      final n = await ref.read(bookingServiceProvider).nudgeUnsetMembers(
+            tripId: widget.trip.id,
+            kind: kind == BookingKind.flight ? 'flight' : 'accommodation',
+          );
+      if (mounted) {
+        TSHaptics.success();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(n == 0
+                ? "everyone's already nudged in the last 24h ✨"
+                : 'nudged $n squadmate${n == 1 ? '' : 's'} ✦'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(humanizeError(e))),
+        );
+      }
+    }
+  }
+
   Future<void> _markMyBooked() async {
     TSHaptics.ctaTap();
     try {
@@ -180,33 +210,32 @@ class _BookTabState extends ConsumerState<BookTab> {
 
         const SizedBox(height: 12),
 
-        // Deadline row for the active scope. Hosts see edit / set
-        // affordances; guests see read-only countdown.
+        // Deadline + nudge row for the active scope. Hosts see edit
+        // / set affordances and a "nudge unset members" button on
+        // the right; guests see read-only countdown.
         deadlinesAsync.when(
           loading: () => const SizedBox.shrink(),
           error: (_, __) => const SizedBox.shrink(),
           data: (list) {
             final d = list.where((x) => x.kind == scopeKind).toList();
-            if (d.isNotEmpty) {
-              return Row(children: [
+            return Row(children: [
+              if (d.isNotEmpty)
                 DeadlineChip(
                   deadline: d.first,
                   canEdit: isHost,
                   onTap: () => _openSetDeadline(scopeKind),
-                ),
-              ]);
-            }
-            if (isHost) {
-              return Row(children: [
+                )
+              else if (isHost)
                 SetDeadlineStub(
                   label: scope == BookScope.flights
                       ? 'set flight deadline'
                       : 'set accommodation deadline',
                   onTap: () => _openSetDeadline(scopeKind),
                 ),
-              ]);
-            }
-            return const SizedBox.shrink();
+              const Spacer(),
+              if (isHost)
+                _NudgeButton(onTap: () => _nudgeUnset(scopeKind)),
+            ]);
           },
         ),
 
@@ -448,6 +477,21 @@ class _FlightsSection extends ConsumerWidget {
             final joinedSquad =
                 squad.where((m) => m.userId != null).toList();
             final byUser = {for (final p in plans) p.userId: p};
+            // Find the anchor (first booker on the trip) — others get
+            // a "match arrival ~Xpm" hint so the squad converges on
+            // the same arrival window.
+            MemberArrivalPlan? anchor;
+            try {
+              anchor = plans.firstWhere((p) => p.isAnchor);
+            } catch (_) {
+              anchor = null;
+            }
+            final anchorMember = anchor == null
+                ? null
+                : joinedSquad.firstWhere(
+                    (m) => m.userId == anchor!.userId,
+                    orElse: () => joinedSquad.first,
+                  );
             // Stable order: anchor first, then booked, searching, not_set.
             final sortedSquad = [...joinedSquad];
             sortedSquad.sort((a, b) {
@@ -467,6 +511,12 @@ class _FlightsSection extends ConsumerWidget {
                     member: sortedSquad[i],
                     plan: byUser[sortedSquad[i].userId],
                     isMe: sortedSquad[i].userId == meUid,
+                    anchorArrivalAt: anchor?.outboundAt,
+                    anchorMemberName: anchorMember == null
+                        ? null
+                        : (anchorMember.userId == meUid
+                            ? 'you'
+                            : anchorMember.nickname),
                   ).animate().fadeIn(delay: (i * 60).ms),
                   const SizedBox(height: 10),
                 ],
@@ -484,6 +534,8 @@ class _FlightsSection extends ConsumerWidget {
     required SquadMember member,
     required MemberArrivalPlan? plan,
     required bool isMe,
+    DateTime? anchorArrivalAt,
+    String? anchorMemberName,
   }) {
     String? url;
     if (plan != null &&
@@ -506,6 +558,8 @@ class _FlightsSection extends ConsumerWidget {
       searchUrl: url,
       onSetDeparture: () => onSetDeparture(plan),
       onMarkBooked: onMarkBooked,
+      anchorArrivalAt: anchorArrivalAt,
+      anchorMemberName: anchorMemberName,
     );
   }
 
@@ -668,6 +722,38 @@ class _AccommodationSection extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// Host-only nudge button. Tap → fires the nudge_unset_members RPC
+/// for the active scope. Outline style so it doesn't compete visually
+/// with the lime-filled action buttons elsewhere on the surface.
+class _NudgeButton extends StatelessWidget {
+  const _NudgeButton({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: TSColors.s2,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: TSColors.border),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.notifications_outlined,
+              size: 12, color: TSColors.text2),
+          const SizedBox(width: 5),
+          Text('nudge unset',
+              style:
+                  TSTextStyles.label(color: TSColors.text2, size: 11)),
+        ]),
+      ),
     );
   }
 }

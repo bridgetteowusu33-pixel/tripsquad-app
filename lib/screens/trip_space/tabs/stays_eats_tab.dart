@@ -156,6 +156,26 @@ class _StaysEatsTabState extends ConsumerState<StaysEatsTab> {
         final scope = ref.watch(staysEatsScopeProvider);
         final showStays = scope == StaysEatsScope.stays;
 
+        // Group-stay tracker context: count squad members who've
+        // confirmed each hotel rec, plus the squad size for the
+        // "N of M" denominator. Watching here so cards re-render
+        // as confirmations land in real time.
+        final confirmsAsync =
+            ref.watch(bookingConfirmationsProvider(widget.trip.id));
+        final lockinAsync =
+            ref.watch(tripLockinStatusProvider(widget.trip.id));
+        final bookedByRec = <String, int>{};
+        confirmsAsync.whenData((list) {
+          for (final c in list) {
+            if (c.kind == BookingKind.accommodation &&
+                c.recommendationId != null) {
+              bookedByRec.update(c.recommendationId!, (n) => n + 1,
+                  ifAbsent: () => 1);
+            }
+          }
+        });
+        final squadSize = lockinAsync.valueOrNull?.squadSize ?? 0;
+
         return RefreshIndicator(
           color: TSColors.lime,
           backgroundColor: TSColors.s2,
@@ -192,9 +212,11 @@ class _StaysEatsTabState extends ConsumerState<StaysEatsTab> {
                   )
                 else
                   for (var i = 0; i < hotels.length; i++) ...[
-                    RecommendationCard(rec: hotels[i])
-                        .animate()
-                        .fadeIn(delay: (i * 40).ms),
+                    RecommendationCard(
+                      rec: hotels[i],
+                      bookedCount: bookedByRec[hotels[i].id] ?? 0,
+                      squadSize: squadSize,
+                    ).animate().fadeIn(delay: (i * 40).ms),
                     const SizedBox(height: 12),
                   ],
               ] else ...[

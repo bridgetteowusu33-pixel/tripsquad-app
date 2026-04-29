@@ -2531,6 +2531,24 @@ class BookingService {
     }, onConflict: 'trip_id,kind');
   }
 
+  /// Host action: nudge squad members who haven't booked yet for the
+  /// given kind. Each unset member gets ONE notification (kind=
+  /// 'nudge_book') with a per-kind copy. Pushed via the existing
+  /// send_push webhook on notifications. Throttle: 24h per recipient
+  /// per kind so a host can't spam.
+  Future<int> nudgeUnsetMembers({
+    required String tripId,
+    required String kind, // 'flight' | 'accommodation'
+  }) async {
+    final res = await _db.rpc(
+      'nudge_unset_members',
+      params: {'_trip_id': tripId, '_kind': kind},
+    );
+    if (res is int) return res;
+    if (res is num) return res.toInt();
+    return 0;
+  }
+
   /// Build the per-member affiliate-tracked flight search URL. Sends
   /// users through `affiliate_redirect` so every click is recorded
   /// and Travelpayouts attribution is preserved. Uses Aviasales when

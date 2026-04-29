@@ -27,6 +27,8 @@ class FlightCard extends StatelessWidget {
     required this.searchUrl,
     required this.onSetDeparture,
     required this.onMarkBooked,
+    this.anchorArrivalAt,
+    this.anchorMemberName,
   });
 
   /// Nullable when the member has never set a departure (no row yet).
@@ -37,6 +39,13 @@ class FlightCard extends StatelessWidget {
   final String? searchUrl;
   final VoidCallback onSetDeparture;
   final VoidCallback onMarkBooked;
+
+  /// When the trip has an anchor (first booker) and THIS card is not
+  /// the anchor, we surface a "match arrival ~Xpm" hint above the
+  /// find-flights button. The user filters in Aviasales themselves —
+  /// our value is telling them what arrival time to filter for.
+  final DateTime? anchorArrivalAt;
+  final String? anchorMemberName;
 
   ArrivalPlanState get _state =>
       plan?.state ?? ArrivalPlanState.not_set;
@@ -139,6 +148,18 @@ class FlightCard extends StatelessWidget {
 
       case ArrivalPlanState.searching:
         return [
+          // Anchor-match hint — only when an anchor exists and THIS
+          // card is not the anchor. Tells the user the arrival time
+          // they should filter their flight search around.
+          if (anchorArrivalAt != null &&
+              plan?.isAnchor != true &&
+              isMe) ...[
+            _AnchorHint(
+              anchorArrival: anchorArrivalAt!,
+              anchorName: anchorMemberName,
+            ),
+            const SizedBox(height: 10),
+          ],
           Row(children: [
             if (searchUrl != null)
               _PrimaryButton(
@@ -197,6 +218,71 @@ class FlightCard extends StatelessWidget {
     final hh = (h % 12 == 0 ? 12 : h % 12).toString();
     final mm = local.minute.toString().padLeft(2, '0');
     return '$hh:$mm$ampm';
+  }
+}
+
+/// Anchor match hint. Shows the host/anchor's arrival time so the
+/// non-anchor member can filter their flight search around it. The
+/// signature TripSquad coordination moment — Aviasales doesn't know
+/// about the anchor, but the user does, and they filter manually.
+class _AnchorHint extends StatelessWidget {
+  const _AnchorHint({required this.anchorArrival, this.anchorName});
+  final DateTime anchorArrival;
+  final String? anchorName;
+
+  String _formatTime(DateTime t) {
+    final local = t.toLocal();
+    final h = local.hour;
+    final ampm = h >= 12 ? 'pm' : 'am';
+    final hh = (h % 12 == 0 ? 12 : h % 12).toString();
+    final mm = local.minute.toString().padLeft(2, '0');
+    return '$hh:$mm$ampm';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final time = _formatTime(anchorArrival);
+    final who = anchorName ?? 'the anchor';
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+      decoration: BoxDecoration(
+        color: TSColors.lime.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: TSColors.lime.withValues(alpha: 0.25)),
+      ),
+      child: Row(children: [
+        const Text('⚓', style: TextStyle(fontSize: 14)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: TSTextStyles.body(size: 12, color: TSColors.text2),
+              children: [
+                const TextSpan(text: 'match '),
+                TextSpan(
+                  text: who,
+                  style: TSTextStyles.body(
+                    size: 12,
+                    color: TSColors.lime,
+                    weight: FontWeight.w600,
+                  ),
+                ),
+                const TextSpan(text: ' — arriving '),
+                TextSpan(
+                  text: time,
+                  style: TSTextStyles.body(
+                    size: 12,
+                    color: TSColors.text,
+                    weight: FontWeight.w600,
+                  ),
+                ),
+                const TextSpan(text: '. filter your search ±2h around it.'),
+              ],
+            ),
+          ),
+        ),
+      ]),
+    );
   }
 }
 

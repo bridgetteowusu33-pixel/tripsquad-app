@@ -9,7 +9,9 @@ import '../../../models/models.dart';
 import '../../../providers/providers.dart';
 import '../../../services/supabase_service.dart';
 import '../../../widgets/widgets.dart';
+import '../widgets/deadline_chip.dart';
 import '../widgets/flight_card.dart';
+import '../widgets/set_deadline_sheet.dart';
 import '../widgets/set_departure_sheet.dart';
 
 /// "Book" tab — the squad-coordination layer between Stays + Eats
@@ -81,6 +83,36 @@ class _BookTabState extends ConsumerState<BookTab> {
     if (result == true && mounted) TSHaptics.light();
   }
 
+  Future<void> _openSetDeadline(BookingKind kind) async {
+    // Find any existing deadline for this kind so the modal opens
+    // pre-populated. AsyncValue.maybeWhen + nullable firstWhere avoids
+    // throwing when the list is empty or hasn't loaded yet.
+    final deadlinesAsync =
+        ref.read(tripBookingDeadlinesProvider(widget.trip.id));
+    final existing = deadlinesAsync.maybeWhen(
+      data: (list) {
+        try {
+          return list.firstWhere((d) => d.kind == kind);
+        } catch (_) {
+          return null;
+        }
+      },
+      orElse: () => null,
+    );
+
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => SetDeadlineSheet(
+        trip: widget.trip,
+        kind: kind,
+        existing: existing,
+      ),
+    );
+    if (result == true && mounted) TSHaptics.success();
+  }
+
   Future<void> _markMyBooked() async {
     TSHaptics.ctaTap();
     try {
@@ -118,6 +150,13 @@ class _BookTabState extends ConsumerState<BookTab> {
     final scope = ref.watch(bookScopeProvider);
     final lockinAsync =
         ref.watch(tripLockinStatusProvider(widget.trip.id));
+    final deadlinesAsync =
+        ref.watch(tripBookingDeadlinesProvider(widget.trip.id));
+    final meUid = Supabase.instance.client.auth.currentUser?.id;
+    final isHost = meUid != null && widget.trip.hostId == meUid;
+    final scopeKind = scope == BookScope.flights
+        ? BookingKind.flight
+        : BookingKind.accommodation;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -139,7 +178,39 @@ class _BookTabState extends ConsumerState<BookTab> {
               ref.read(bookScopeProvider.notifier).state = s,
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
+
+        // Deadline row for the active scope. Hosts see edit / set
+        // affordances; guests see read-only countdown.
+        deadlinesAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (list) {
+            final d = list.where((x) => x.kind == scopeKind).toList();
+            if (d.isNotEmpty) {
+              return Row(children: [
+                DeadlineChip(
+                  deadline: d.first,
+                  canEdit: isHost,
+                  onTap: () => _openSetDeadline(scopeKind),
+                ),
+              ]);
+            }
+            if (isHost) {
+              return Row(children: [
+                SetDeadlineStub(
+                  label: scope == BookScope.flights
+                      ? 'set flight deadline'
+                      : 'set accommodation deadline',
+                  onTap: () => _openSetDeadline(scopeKind),
+                ),
+              ]);
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+
+        const SizedBox(height: 12),
 
         if (scope == BookScope.flights)
           _FlightsSection(

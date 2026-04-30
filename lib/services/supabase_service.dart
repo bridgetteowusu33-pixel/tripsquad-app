@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -2755,5 +2756,56 @@ class RecommendationsService {
     if (res.status != 200) {
       throw Exception(_fnError(res, 'recommendations generation'));
     }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  FEEDBACK SERVICE — sentiment-router model (MemeScanr-style).
+//  Apple bars third-party UI from submitting App Store ratings,
+//  so the "rate tripsquad" tile fans into a 3-card sentiment vote:
+//  happy → Apple's InAppReview prompt (no row written here),
+//  neutral/unhappy → feedback form whose submission lands in this
+//  table for triage. Filters our App Store distribution upward
+//  AND gives unhappy users a follow-up channel.
+// ─────────────────────────────────────────────────────────────
+final feedbackServiceProvider =
+    Provider((ref) => FeedbackService(ref.read(supabaseProvider)));
+
+class FeedbackService {
+  FeedbackService(this._db);
+  final SupabaseClient _db;
+
+  /// Submit a feedback form entry. Pulls package version + build
+  /// for triage; platform string for split filtering. Sentiment
+  /// + category route the row in our private review queue.
+  Future<void> submit({
+    required String sentiment,   // happy | neutral | unhappy
+    required String category,    // bug | feature_request | general
+    required String message,
+    String? trigger,
+  }) async {
+    final uid = _db.auth.currentUser?.id;
+    if (uid == null) {
+      throw Exception('sign in to leave feedback');
+    }
+    String? appVersion;
+    String? buildNumber;
+    try {
+      final info = await PackageInfo.fromPlatform();
+      appVersion = info.version;
+      buildNumber = info.buildNumber;
+    } catch (_) { /* best-effort */ }
+
+    await _db.from('app_feedback').insert({
+      'user_id': uid,
+      'sentiment': sentiment,
+      'category': category,
+      'comment': message.trim(),
+      'trigger': trigger,
+      'app_version': appVersion,
+      'build_number': buildNumber,
+      'platform':
+          Platform.isIOS ? 'ios' : (Platform.isAndroid ? 'android' : 'other'),
+    });
   }
 }

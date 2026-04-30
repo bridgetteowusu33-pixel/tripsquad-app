@@ -1340,6 +1340,10 @@ class _SquadRow extends ConsumerWidget {
             tripId: member.tripId,
             userId: member.userId,
           );
+      // Force the squad list to re-fetch so the kicked row vanishes
+      // immediately for the host. The realtime publication catches the
+      // DELETE for everyone else (migration 073).
+      ref.invalidate(squadStreamProvider(member.tripId));
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

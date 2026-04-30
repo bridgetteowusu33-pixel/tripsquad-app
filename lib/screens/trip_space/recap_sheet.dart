@@ -63,7 +63,22 @@ class _RecapSheetState extends ConsumerState<RecapSheet> {
   }
 
   Future<void> _save() async {
-    if (_stars == 0 || _wouldReturn == null) return;
+    // Tell the user WHY the button isn't doing anything, instead of
+    // silently returning (the original behavior — which read as a
+    // broken button).
+    if (_stars == 0 || _wouldReturn == null) {
+      TSHaptics.errorTick();
+      final missing = <String>[];
+      if (_stars == 0) missing.add('pick a star rating');
+      if (_wouldReturn == null) missing.add('answer "would you go again?"');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(missing.join(' · ')),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
     setState(() => _saving = true);
     try {
       await ref.read(ratingsServiceProvider).submitRecap(
@@ -236,10 +251,16 @@ class _RecapSheetState extends ConsumerState<RecapSheet> {
 
               SizedBox(
                 width: double.infinity,
-                child: TSButton(
-                  label: _saving ? 'saving…' : 'save recap ✦',
-                  loading: _saving,
-                  onTap: canSave ? _save : () {},
+                // Visually fade the button when the form isn't ready
+                // — but keep the tap live so _save can surface a
+                // "what's missing" snackbar instead of going silent.
+                child: Opacity(
+                  opacity: canSave ? 1.0 : 0.5,
+                  child: TSButton(
+                    label: _saving ? 'saving…' : 'save recap ✦',
+                    loading: _saving,
+                    onTap: _save,
+                  ),
                 ),
               ),
             ])),

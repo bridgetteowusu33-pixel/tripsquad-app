@@ -7,13 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:in_app_review/in_app_review.dart';
+import '../../feedback/sentiment_router_sheet.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../core/constants.dart';
 import '../../core/feature_flags.dart';
 import '../../core/theme.dart';
 import '../../core/errors.dart';
@@ -27,11 +26,6 @@ import '../../services/supabase_service.dart';
 import '../../widgets/weather_chip.dart';
 import '../../widgets/widgets.dart';
 import '../../main.dart' show rootScaffoldMessengerKey;
-
-/// App Store ID for `openStoreListing` — used when StoreKit's
-/// in-app review prompt isn't available (simulator, etc.) so the
-/// user can still leave a review by jumping to the listing.
-const _appStoreId = '6762568582';
 
 /// Full Settings screen. Opened from Profile tab → ⚙️ settings.
 /// Sections: Account · Notifications · App · Support · Legal · Danger.
@@ -171,34 +165,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               _Tile(
                 icon: '⭐',
                 label: 'rate tripsquad',
-                subtitle: 'leave a review on the app store',
+                subtitle: "tell us how we're doing",
                 onTap: () async {
                   TSHaptics.ctaTap();
-                  final reviewer = InAppReview.instance;
-                  try {
-                    if (await reviewer.isAvailable()) {
-                      await reviewer.requestReview();
-                    } else {
-                      // No native prompt available (sim / Android
-                      // Lite install) — open the store listing
-                      // directly so the user can still leave a
-                      // review.
-                      await reviewer.openStoreListing(
-                        appStoreId: _appStoreId,
-                      );
-                    }
-                  } catch (_) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('couldn\'t open the app store',
-                            style: TSTextStyles.body(
-                                color: TSColors.bg, size: 13)),
-                        backgroundColor: TSColors.coral,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  }
+                  // 3-card sentiment vote: happy → Apple's InAppReview
+                  // prompt + confetti; neutral/unhappy → category-aware
+                  // feedback form that lands in app_feedback for triage.
+                  await showSentimentRouter(context, trigger: 'settings_rate_tile');
                 },
               ),
 

@@ -947,12 +947,16 @@ class _AskScoutRowState extends ConsumerState<_AskScoutRow> {
   @override
   Widget build(BuildContext context) {
     final dest = widget.trip.selectedDestination ?? widget.trip.name;
-    final prompts = [
-      ('🍽️', 'top 5 restaurants in $dest'),
-      ('🏛️', 'must-see things in $dest'),
-      ('🌃', 'best nightlife in $dest'),
-      ('💰', 'budget tips for $dest'),
-      ('🎒', 'what should we pack for $dest?'),
+    // (emoji, chipLabel, fullPrompt) — chipLabel is what shows in the
+    // pill, fullPrompt is what gets sent to Scout. Keeping them separate
+    // avoids the "split on 'in'" trick which mangled words like "things"
+    // and didn't strip "for $dest" prompts at all.
+    final prompts = <(String, String, String)>[
+      ('🍽️', 'top 5 restaurants', 'top 5 restaurants in $dest'),
+      ('🏛️', 'must-see things',   'must-see things in $dest'),
+      ('🌃', 'best nightlife',    'best nightlife in $dest'),
+      ('💰', 'budget tips',       'budget tips for $dest'),
+      ('🎒', 'packing list',      'what should we pack for $dest?'),
     ];
     return SizedBox(
       height: 32,
@@ -969,10 +973,10 @@ class _AskScoutRowState extends ConsumerState<_AskScoutRow> {
                       color: TSColors.muted, size: 10)),
             );
           }
-          final (emoji, prompt) = prompts[i - 1];
+          final (emoji, label, fullPrompt) = prompts[i - 1];
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: _busy ? null : () => _ask(prompt),
+            onTap: _busy ? null : () => _ask(fullPrompt),
             child: Container(
               padding: const EdgeInsets.symmetric(
                   horizontal: 10, vertical: 5),
@@ -984,7 +988,7 @@ class _AskScoutRowState extends ConsumerState<_AskScoutRow> {
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 Text(emoji, style: const TextStyle(fontSize: 12)),
                 const SizedBox(width: 4),
-                Text(prompt.split('in').first.trim(),
+                Text(label,
                     style: TSTextStyles.caption(color: TSColors.text)),
               ]),
             ),

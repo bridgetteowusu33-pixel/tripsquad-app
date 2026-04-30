@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -115,6 +116,44 @@ class AuthService {
     if (uid == null) return;
     fields['updated_at'] = DateTime.now().toIso8601String();
     await _db.from('profiles').update(fields).eq('id', uid);
+  }
+
+  /// Reads the user's current dislikes list. Auto-populated by Scout
+  /// (Haiku extractor in scout_chat) and editable by the user from
+  /// settings. Returns [] if not signed in or the column is empty.
+  Future<List<String>> fetchDislikes() async {
+    final uid = currentUser?.id;
+    if (uid == null) return const [];
+    final row = await _db
+        .from('profiles')
+        .select('dislikes')
+        .eq('id', uid)
+        .maybeSingle();
+    final raw = row?['dislikes'];
+    if (raw is List) {
+      return raw.whereType<String>().toList();
+    }
+    return const [];
+  }
+
+  /// Replace the dislikes list with [items]. Used by the settings UI
+  /// for both "remove a chip" (filtered list) and "add a chip"
+  /// (appended list) actions.
+  Future<void> setDislikes(List<String> items) async {
+    final uid = currentUser?.id;
+    if (uid == null) return;
+    // Normalize: lowercase, trim, drop blanks, dedupe (case-insensitive).
+    final seen = <String>{};
+    final cleaned = <String>[];
+    for (final raw in items) {
+      final s = raw.toLowerCase().trim();
+      if (s.isEmpty || s.length > 40) continue;
+      if (seen.add(s)) cleaned.add(s);
+    }
+    await _db
+        .from('profiles')
+        .update({'dislikes': cleaned, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('id', uid);
   }
 
   // ── Check tag availability ────────────────────────────────
@@ -1261,10 +1300,12 @@ class ScoutService {
   ///     (1:1 history scoped to the trip)
   Future<String> ask(String content,
       {String? imageUrl, String? tripId, bool private = false}) async {
+    final tone = await _readScoutTone();
     final res = await _db.functions.invoke(
       'scout_chat',
       body: {
         'content': content,
+        'tone': tone,
         if (imageUrl != null) 'image_url': imageUrl,
         if (tripId != null) 'trip_id': tripId,
         if (private) 'private': true,
@@ -1274,6 +1315,20 @@ class ScoutService {
       throw Exception(_fnError(res, 'scout chat'));
     }
     return (res.data['reply'] as String?) ?? '';
+  }
+
+  /// Reads the user-selected Scout tone from SharedPreferences. The
+  /// settings tab persists it under 'scout_tone'. Defaults to 'standard'.
+  /// Returns one of: 'standard' | 'chill' | 'terse'.
+  Future<String> _readScoutTone() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('scout_tone');
+      if (raw == 'chill' || raw == 'terse') return raw!;
+      return 'standard';
+    } catch (_) {
+      return 'standard';
+    }
   }
 
   /// Upload a photo attached to a Scout 1:1 question. Stored under
@@ -1310,11 +1365,13 @@ class ScoutService {
     required String content,
     String? imageUrl,
   }) async {
+    final tone = await _readScoutTone();
     final res = await _db.functions.invoke(
       'scout_chat',
       body: {
         'content': content,
         'trip_id': tripId,
+        'tone': tone,
         if (imageUrl != null) 'image_url': imageUrl,
       },
     );
@@ -2353,6 +2410,55 @@ class BookingService {
             .toList());
   }
 
+  /// On first BookTab open, prefill the user's per-trip arrival plan
+  /// with the home_city + home_airport they already gave us during
+  /// onboarding (or edited in profile settings). Idempotent: if they
+  /// already have a row WITH a departure_iata set, we don't overwrite
+  /// it (they may be flying from somewhere different for this trip —
+  /// they can still tap "set departure" to override).
+  ///
+  /// Without this, the BookTab asks them to set the airport again
+  /// even though it's been on their profile the whole time.
+  Future<void> bootstrapArrivalPlanFromProfile({
+    required String tripId,
+    String? arrivalIata,
+  }) async {
+    final uid = _db.auth.currentUser?.id;
+    if (uid == null) return;
+    try {
+      final existing = await _db
+          .from('member_arrival_plans')
+          .select('departure_iata')
+          .eq('trip_id', tripId)
+          .eq('user_id', uid)
+          .maybeSingle();
+      // Already set for this trip — never overwrite.
+      final hasDeparture = (existing?['departure_iata'] as String?)
+              ?.trim()
+              .isNotEmpty ??
+          false;
+      if (hasDeparture) return;
+
+      final profile = await _db
+          .from('profiles')
+          .select('home_city, home_airport')
+          .eq('id', uid)
+          .maybeSingle();
+      final city = (profile?['home_city'] as String?)?.trim();
+      final iata = (profile?['home_airport'] as String?)?.trim().toUpperCase();
+      if (iata == null || iata.length != 3) return; // nothing to bootstrap
+
+      await upsertMyArrivalPlan(
+        tripId: tripId,
+        departureCity: city,
+        departureIata: iata,
+        arrivalIata: arrivalIata,
+      );
+    } catch (_) {
+      // Non-fatal — user can still tap "set departure" manually.
+    }
+  }
+
   /// Upsert the current user's arrival plan. Used when setting
   /// departure city/iata for the first time and for state transitions
   /// (not_set -> searching once departure is set).
@@ -2390,9 +2496,13 @@ class BookingService {
     );
   }
 
-  /// Mark the current user's flight as booked. Sets is_anchor=true if
-  /// nobody else on the trip has booked yet — that flag drives the
-  /// "match the host's arrival" UX for everyone else.
+  /// Mark the current user's flight as booked. Anchor election is
+  /// atomic via the `book_my_flight` SECURITY DEFINER RPC (migration
+  /// 084) — it locks the trip row, picks the anchor, upserts the
+  /// arrival plan, and records the booking_confirmation in a single
+  /// transaction. Two squad members tapping "I booked" simultaneously
+  /// no longer race-fail; the loser still books, just without the
+  /// anchor flag.
   Future<void> markMyFlightBooked({
     required String tripId,
     DateTime? outboundAt,
@@ -2400,37 +2510,13 @@ class BookingService {
     String? flightNumber,
     String? bookingRef,
   }) async {
-    final uid = _db.auth.currentUser!.id;
-    // Anyone already booked? If not, this user becomes the anchor.
-    final priorAnchor = await _db
-        .from('member_arrival_plans')
-        .select('id')
-        .eq('trip_id', tripId)
-        .eq('state', 'booked')
-        .limit(1)
-        .maybeSingle();
-    final isAnchor = priorAnchor == null;
-
-    await _db.from('member_arrival_plans').upsert({
-      'trip_id': tripId,
-      'user_id': uid,
-      'state': 'booked',
-      'is_anchor': isAnchor,
-      'outbound_at': outboundAt?.toIso8601String(),
-      'airline': airline,
-      'flight_number': flightNumber,
-      'booking_ref': bookingRef,
-      'booked_at': DateTime.now().toUtc().toIso8601String(),
-    }, onConflict: 'trip_id,user_id');
-
-    // Also record in booking_confirmations so the lock-in counter
-    // climbs. Two surfaces tracking different concerns: arrival_plans
-    // is per-flight detail; confirmations is the squad-visible "I'm
-    // in" log used for percentages and chat broadcasts.
-    await recordBookingConfirmation(
-      tripId: tripId,
-      kind: 'flight',
-    );
+    await _db.rpc('book_my_flight', params: {
+      'p_trip_id':       tripId,
+      'p_outbound_at':   outboundAt?.toUtc().toIso8601String(),
+      'p_airline':       airline,
+      'p_flight_number': flightNumber,
+      'p_booking_ref':   bookingRef,
+    });
   }
 
   /// Squad-self-reported "I booked this." Insert OR update the existing

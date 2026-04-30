@@ -61,7 +61,7 @@ class _SentimentRouterSheet extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'tap one — we read every note.',
+              'tap one. we read every note.',
               style: TSTextStyles.body(color: TSColors.text2),
               textAlign: TextAlign.center,
             ),

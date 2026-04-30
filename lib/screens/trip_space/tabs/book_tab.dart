@@ -52,20 +52,32 @@ class _BookTabState extends ConsumerState<BookTab> {
       final dest = widget.trip.selectedDestination;
       if (dest == null || dest.isEmpty) {
         if (mounted) setState(() => _arrivalIataLoaded = true);
-        return;
-      }
-      final guide = await ref
-          .read(placesServiceProvider)
-          .fetchDestinationGuide(dest);
-      if (mounted) {
-        setState(() {
-          _arrivalIata = guide?['airport_iata'] as String?;
-          _arrivalIataLoaded = true;
-        });
+      } else {
+        final guide = await ref
+            .read(placesServiceProvider)
+            .fetchDestinationGuide(dest);
+        if (mounted) {
+          setState(() {
+            _arrivalIata = guide?['airport_iata'] as String?;
+            _arrivalIataLoaded = true;
+          });
+        }
       }
     } catch (_) {
       if (mounted) setState(() => _arrivalIataLoaded = true);
     }
+
+    // Auto-fill the user's per-trip departure from their profile
+    // (home_city + home_airport set in onboarding / settings). Without
+    // this, the user got the "set departure airport" CTA every time —
+    // even though we already had the data on the profiles row. Realtime
+    // stream picks up the new arrival_plan and the card re-renders.
+    try {
+      await ref.read(bookingServiceProvider).bootstrapArrivalPlanFromProfile(
+            tripId: widget.trip.id,
+            arrivalIata: _arrivalIata,
+          );
+    } catch (_) { /* non-fatal */ }
   }
 
   Future<void> _openSetDeparture(MemberArrivalPlan? existing) async {

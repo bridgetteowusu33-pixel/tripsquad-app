@@ -375,22 +375,36 @@ class _DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TSCard(
-      child: Row(
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 18)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: TSTextStyles.caption()),
-                Text(value, style: TSTextStyles.body(size: 15)),
-              ],
+    // Tap anywhere on the row to open the edit-profile screen. The
+    // "edit" label on the right was previously a static text label
+    // with no gesture handler — looked tappable but did nothing.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        TSHaptics.light();
+        context.push('/settings/edit-profile');
+      },
+      child: TSCard(
+        child: Row(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 18)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: TSTextStyles.caption()),
+                  Text(value, style: TSTextStyles.body(size: 15)),
+                ],
+              ),
             ),
-          ),
-          Text('edit', style: TSTextStyles.caption(color: TSColors.muted)),
-        ],
+            Text('edit',
+                style: TSTextStyles.caption(color: TSColors.lime)),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right_rounded,
+                size: 18, color: TSColors.muted),
+          ],
+        ),
       ),
     );
   }

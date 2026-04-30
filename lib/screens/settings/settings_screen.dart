@@ -22,6 +22,7 @@ import '../../providers/providers.dart';
 import '../../widgets/saved_scout_tips.dart';
 import '../../providers/entitlement_providers.dart';
 import '../../providers/paywall_providers.dart';
+import '../../services/push_service.dart';
 import '../../services/supabase_service.dart';
 import '../../widgets/weather_chip.dart';
 import '../../widgets/widgets.dart';
@@ -45,6 +46,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     PackageInfo.fromPlatform().then((i) {
       if (mounted) setState(() => _info = i);
     });
+    // Re-log push permission status whenever settings opens. Catches
+    // the user-flipped-it-in-iOS case without needing a global app
+    // lifecycle observer. Fire-and-forget — never blocks the UI.
+    PushService.logCurrentStatus();
   }
 
   @override
@@ -131,6 +136,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
               _section('scout'),
               const _ScoutToneRow(),
+              const SizedBox(height: 16),
+              const _DislikesRow(),
               const _ExportScoutRow(),
               const _ClearScoutRow(),
 
@@ -228,7 +235,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               const SizedBox(height: 28),
               Center(
                 child: Text(
-                  'tripsquad${_info == null ? '' : ' v${_info!.version} · build ${_info!.buildNumber}'}',
+                  'tripsquad${_info == null ? '' : ' v${_info!.version}'}',
                   style: TSTextStyles.caption(color: TSColors.muted),
                 ),
               ),
@@ -812,12 +819,14 @@ class _NotificationTogglesState
 
 // ── Scout tone (standard / chill / terse) ─────────────────────
 // From the UX redesign (§H Scout Experience System):
-// - standard: default voice
-// - chill:    fewer nudges, longer silences
-// - terse:    only major events (reveals, voting, reminders)
+// - standard: default genz/millennial voice (lock in, vibes, no FOMO)
+// - chill:    longer answers ok, lower urgency, no "do this now" CTAs
+// - terse:    1-3 sentences max, no preamble, ship the answer dip
 //
-// Persisted in SharedPreferences under `scout_tone`. Future work:
-// plumb into the scout_chat edge function via a header.
+// Persisted in SharedPreferences under `scout_tone`. SupabaseService
+// reads it on every scout_chat invoke and forwards as `tone` in the
+// request body; scout_chat layers a per-tone instruction block on the
+// base system prompt so each option produces audibly different output.
 
 enum ScoutTone { standard, chill, terse }
 
@@ -841,9 +850,32 @@ class _ScoutToneNotifier extends StateNotifier<ScoutTone> {
   }
 
   Future<void> set(ScoutTone tone) async {
+    final from = state.name;
     state = tone;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('scout_tone', tone.name);
+    // Mirror to server so we can measure tone usage + change frequency
+    // in scout_tone_distribution / scout_tone_engagement views and
+    // analyze "did switching tones correlate with retention?" The
+    // tone_changes log captures the from→to transition for finer
+    // analysis (was the user a standard→chill switcher who stuck
+    // around vs. a one-time toggler).
+    final db = Supabase.instance.client;
+    final uid = db.auth.currentUser?.id;
+    if (uid == null) return;
+    try {
+      await db.from('profiles').update({
+        'scout_tone': tone.name,
+        'scout_tone_set_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', uid);
+      if (from != tone.name) {
+        await db.from('scout_tone_changes').insert({
+          'user_id':   uid,
+          'from_tone': from,
+          'to_tone':   tone.name,
+        });
+      }
+    } catch (_) { /* non-fatal — local state is the source of truth */ }
   }
 }
 
@@ -1194,6 +1226,229 @@ class _ToneChip extends StatelessWidget {
             color: selected ? TSColors.lime : TSColors.text2,
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Dislikes — things scout won't suggest ─────────────────────
+// Two-way sync with `profiles.dislikes`:
+//   - Reads: pulled fresh each time the settings screen renders
+//     (FutureProvider.autoDispose so it refreshes on re-entry).
+//   - Writes from chat: scout_chat's Haiku extractor silently appends
+//     when the user mentions hating something travel-related.
+//   - Writes from this UI: tap × to remove, type + tap "add" to add.
+
+final _myDislikesProvider = FutureProvider.autoDispose<List<String>>((ref) {
+  return ref.read(authServiceProvider).fetchDislikes();
+});
+
+class _DislikesRow extends ConsumerStatefulWidget {
+  const _DislikesRow();
+
+  @override
+  ConsumerState<_DislikesRow> createState() => _DislikesRowState();
+}
+
+class _DislikesRowState extends ConsumerState<_DislikesRow> {
+  final _addCtrl = TextEditingController();
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _addCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _writeAndRefresh(List<String> next) async {
+    setState(() => _saving = true);
+    try {
+      await ref.read(authServiceProvider).setDislikes(next);
+      ref.invalidate(_myDislikesProvider);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(humanizeError(e))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _remove(List<String> current, String item) async {
+    TSHaptics.selection();
+    final next = current.where((d) => d != item).toList();
+    await _writeAndRefresh(next);
+  }
+
+  Future<void> _add(List<String> current) async {
+    final raw = _addCtrl.text.trim().toLowerCase();
+    if (raw.isEmpty) return;
+    if (raw.length > 40) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('keep it short — 40 chars max')),
+      );
+      return;
+    }
+    if (current.contains(raw)) {
+      _addCtrl.clear();
+      return;
+    }
+    TSHaptics.success();
+    await _writeAndRefresh([...current, raw]);
+    _addCtrl.clear();
+    if (mounted) FocusManager.instance.primaryFocus?.unfocus();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final async = ref.watch(_myDislikesProvider);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("things scout won't suggest",
+              style: TSTextStyles.body(size: 14, color: TSColors.text)),
+          const SizedBox(height: 2),
+          Text(
+            "scout learns these from chat. tap × to remove. or add your own.",
+            style: TSTextStyles.caption(color: TSColors.muted),
+          ),
+          const SizedBox(height: 12),
+          async.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 14),
+              child: SizedBox(
+                height: 14, width: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2, color: TSColors.lime),
+              ),
+            ),
+            error: (_, __) => Text(
+              "couldn't load — pull settings down to retry.",
+              style: TSTextStyles.caption(color: TSColors.coral),
+            ),
+            data: (dislikes) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (dislikes.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Text(
+                        "nothing yet. tell scout 'i hate crowds' or add one below.",
+                        style: TSTextStyles.caption(color: TSColors.muted2),
+                      ),
+                    )
+                  else
+                    Wrap(
+                      spacing: 6, runSpacing: 6,
+                      children: [
+                        for (final d in dislikes)
+                          _DislikeChip(
+                            label: d,
+                            onRemove: _saving ? null : () => _remove(dislikes, d),
+                          ),
+                      ],
+                    ),
+                  const SizedBox(height: 10),
+                  Row(children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _addCtrl,
+                        enabled: !_saving,
+                        textCapitalization: TextCapitalization.none,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _add(dislikes),
+                        style: TSTextStyles.body(size: 14),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          hintText: "add something (e.g. 'casinos')",
+                          hintStyle: TSTextStyles.body(
+                              size: 13, color: TSColors.muted),
+                          filled: true,
+                          fillColor: TSColors.s2,
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: TSColors.border),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide:
+                                const BorderSide(color: TSColors.lime, width: 1.4),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _saving ? null : () => _add(dislikes),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: TSColors.lime,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text('add',
+                            style: TSTextStyles.label(
+                                color: TSColors.bg, size: 12)),
+                      ),
+                    ),
+                  ]),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DislikeChip extends StatelessWidget {
+  const _DislikeChip({required this.label, required this.onRemove});
+  final String label;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 6, 6, 6),
+      decoration: BoxDecoration(
+        color: TSColors.s2,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: TSColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label,
+              style: TSTextStyles.body(size: 12, color: TSColors.text2)),
+          const SizedBox(width: 4),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onRemove,
+            child: Container(
+              width: 22, height: 22,
+              alignment: Alignment.center,
+              child: Icon(
+                Icons.close_rounded,
+                size: 14,
+                color: onRemove == null ? TSColors.muted : TSColors.muted2,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

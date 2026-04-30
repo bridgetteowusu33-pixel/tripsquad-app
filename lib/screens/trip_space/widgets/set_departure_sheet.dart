@@ -43,6 +43,28 @@ class _SetDepartureSheetState extends ConsumerState<SetDepartureSheet> {
     super.initState();
     _city = TextEditingController(text: widget.initialCity ?? '');
     _iata = TextEditingController(text: widget.initialIata ?? '');
+    // If the per-trip plan is empty, fall back to the profile defaults
+    // (home_city + home_airport) so the user isn't typing them again.
+    if ((widget.initialCity ?? '').isEmpty &&
+        (widget.initialIata ?? '').isEmpty) {
+      _prefillFromProfile();
+    }
+  }
+
+  Future<void> _prefillFromProfile() async {
+    try {
+      final profile =
+          await ref.read(authServiceProvider).fetchCurrentProfile();
+      if (!mounted || profile == null) return;
+      final city = profile.homeCity?.trim() ?? '';
+      final iata = profile.homeAirport?.trim().toUpperCase() ?? '';
+      if (city.isNotEmpty || iata.isNotEmpty) {
+        setState(() {
+          if (_city.text.isEmpty) _city.text = city;
+          if (_iata.text.isEmpty) _iata.text = iata;
+        });
+      }
+    } catch (_) { /* non-fatal */ }
   }
 
   @override

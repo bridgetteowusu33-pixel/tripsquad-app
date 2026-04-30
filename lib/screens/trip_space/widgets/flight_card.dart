@@ -258,7 +258,6 @@ class _AnchorHint extends StatelessWidget {
             text: TextSpan(
               style: TSTextStyles.body(size: 12, color: TSColors.text2),
               children: [
-                const TextSpan(text: 'match '),
                 TextSpan(
                   text: who,
                   style: TSTextStyles.body(
@@ -267,7 +266,7 @@ class _AnchorHint extends StatelessWidget {
                     weight: FontWeight.w600,
                   ),
                 ),
-                const TextSpan(text: ' — arriving '),
+                const TextSpan(text: ' lands around '),
                 TextSpan(
                   text: time,
                   style: TSTextStyles.body(
@@ -276,7 +275,10 @@ class _AnchorHint extends StatelessWidget {
                     weight: FontWeight.w600,
                   ),
                 ),
-                const TextSpan(text: '. filter your search ±2h around it.'),
+                const TextSpan(
+                  text: '. try to land within a few hours so the squad '
+                      'can roll out together — not a hard rule.',
+                ),
               ],
             ),
           ),

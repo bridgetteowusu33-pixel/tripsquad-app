@@ -19,6 +19,7 @@ import '../../widgets/home_on_this_day.dart';
 import '../../widgets/home_push_banner.dart';
 import '../../widgets/home_recap_prompt.dart';
 import '../../widgets/home_scout_prompts.dart';
+import '../../widgets/whats_new_sheet.dart';
 import '../../widgets/trip_card.dart' as tc;
 import '../../widgets/resume_vote_banner.dart';
 import '../paywall/create_trip_gate.dart';
@@ -37,6 +38,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     _subscribeToTripChanges();
+    // Show "what's new" half-sheet once per upgrade. Internal flag in
+    // SharedPreferences keeps it from re-firing on the same device.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) maybeShowWhatsNew(context);
+    });
   }
 
   /// Keep Home's trip cards live without pull-to-refresh.

@@ -92,6 +92,9 @@ class PushService {
       badge: true,
       sound: true,
     );
+    // Log the resulting permission status to push_permission_log for
+    // the opt-out telemetry view. Fire-and-forget — never blocks init.
+    _logPermissionStatus(settings.authorizationStatus);
     if (settings.authorizationStatus == AuthorizationStatus.denied) return;
 
     if (Platform.isIOS) {
@@ -137,6 +140,41 @@ class PushService {
     // Background tap (user opens notification): we don't deep-link yet.
     // TODO: wire to router for trip_id / dm_user_id navigation.
     FirebaseMessaging.onMessageOpenedApp.listen((_) {});
+  }
+
+  /// Public hook so the Settings tab (and anywhere else) can re-log
+  /// the current platform permission status — useful right after the
+  /// user returns from the iOS Settings app, where they may have
+  /// flipped the toggle. Idempotent on a per-status basis (the SQL
+  /// table just appends; the view dedupes by latest-row-per-user).
+  static Future<void> logCurrentStatus() async {
+    try {
+      final s = await FirebaseMessaging.instance.getNotificationSettings();
+      await _logPermissionStatus(s.authorizationStatus);
+    } catch (_) { /* non-fatal */ }
+  }
+
+  /// Internal: writes a row to `push_permission_log`. Fire-and-forget;
+  /// drives the `push_optout_rate_7d` view we use to monitor whether
+  /// our push volume is pushing users to disable notifications.
+  static Future<void> _logPermissionStatus(AuthorizationStatus s) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    final dbStatus = switch (s) {
+      AuthorizationStatus.authorized    => 'authorized',
+      AuthorizationStatus.denied        => 'denied',
+      AuthorizationStatus.provisional   => 'provisional',
+      AuthorizationStatus.notDetermined => 'not_determined',
+    };
+    try {
+      await Supabase.instance.client.from('push_permission_log').insert({
+        'user_id':  user.id,
+        'status':   dbStatus,
+        'platform': Platform.isIOS ? 'ios' : 'android',
+      });
+    } catch (e) {
+      if (kDebugMode) debugPrint('push permission log failed: $e');
+    }
   }
 
   static Future<void> _registerToken(String token) async {

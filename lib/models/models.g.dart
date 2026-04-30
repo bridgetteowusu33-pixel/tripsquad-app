@@ -28,6 +28,10 @@ _$TripImpl _$$TripImplFromJson(Map<String, dynamic> json) => _$TripImpl(
       selectedFlag: json['selectedFlag'] as String?,
       estimatedBudget: (json['estimatedBudget'] as num?)?.toInt(),
       coverPhotoUrl: json['coverPhotoUrl'] as String?,
+      squadPickAccommodationId: json['squadPickAccommodationId'] as String?,
+      squadPickSetAt: json['squadPickSetAt'] == null
+          ? null
+          : DateTime.parse(json['squadPickSetAt'] as String),
       squadMembers: (json['squadMembers'] as List<dynamic>?)
               ?.map((e) => SquadMember.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -63,6 +67,8 @@ Map<String, dynamic> _$$TripImplToJson(_$TripImpl instance) =>
       'selectedFlag': instance.selectedFlag,
       'estimatedBudget': instance.estimatedBudget,
       'coverPhotoUrl': instance.coverPhotoUrl,
+      'squadPickAccommodationId': instance.squadPickAccommodationId,
+      'squadPickSetAt': instance.squadPickSetAt?.toIso8601String(),
       'squadMembers': instance.squadMembers,
       'options': instance.options,
       'itinerary': instance.itinerary,

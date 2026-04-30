@@ -113,6 +113,33 @@ class _BookTabState extends ConsumerState<BookTab> {
     if (result == true && mounted) TSHaptics.success();
   }
 
+  /// Returns a non-null banner widget when the host should reconsider
+  /// the squad accommodation pick: pick was set >24h ago and less than
+  /// half the squad has confirmed. Surfaces a "rethink the pick?"
+  /// CTA so the host isn't railroading the squad. Hidden for non-hosts
+  /// and for the flights scope.
+  Widget? _maybeSquadPickStaleWarning({
+    required AsyncValue<TripLockinStatus?> lockinAsync,
+    required bool isHost,
+    required bool onAccommodation,
+  }) {
+    if (!isHost || !onAccommodation) return null;
+    final pickedAt = widget.trip.squadPickSetAt;
+    final pickId = widget.trip.squadPickAccommodationId;
+    if (pickId == null || pickedAt == null) return null;
+    final age = DateTime.now().difference(pickedAt);
+    if (age.inHours < 24) return null;
+    final lockin = lockinAsync.valueOrNull;
+    if (lockin == null || lockin.squadSize == 0) return null;
+    final pct = lockin.accommodationLockinPct ?? 0;
+    if (pct >= 50) return null;
+    return _StalePickBanner(
+      bookedCount: lockin.accommodationBooked,
+      squadSize: lockin.squadSize,
+      onNudge: () => _nudgeUnset(BookingKind.accommodation),
+    );
+  }
+
   /// Host action: ping unset squad members. Returns count for the
   /// snackbar copy ("nudged 3 squadmates"). Backed by the
   /// nudge_unset_members RPC which throttles per recipient (24h).
@@ -188,6 +215,15 @@ class _BookTabState extends ConsumerState<BookTab> {
         ? BookingKind.flight
         : BookingKind.accommodation;
 
+    // Low-confirm warning: when the squad pick is >24h old AND less
+    // than half the squad has confirmed, surface a host-facing banner
+    // so they can rethink. Read from trip + lock-in status.
+    final squadPickStaleWarning = _maybeSquadPickStaleWarning(
+      lockinAsync: lockinAsync,
+      isHost: isHost,
+      onAccommodation: scope == BookScope.accommodation,
+    );
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
@@ -240,6 +276,11 @@ class _BookTabState extends ConsumerState<BookTab> {
         ),
 
         const SizedBox(height: 12),
+
+        if (squadPickStaleWarning != null) ...[
+          squadPickStaleWarning,
+          const SizedBox(height: 12),
+        ],
 
         if (scope == BookScope.flights)
           _FlightsSection(
@@ -722,6 +763,80 @@ class _AccommodationSection extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// Host-only banner: "your squad pick isn't catching." Shown when
+/// the squad pick was set >24h ago and confirms < 50%. Two actions:
+/// nudge the holdouts (existing nudge_unset_members RPC), or
+/// "rethink" which currently scrolls back to alternatives — the host
+/// re-taps "make this our pick" on a different hotel; setSquadPick
+/// upserts the trip column.
+class _StalePickBanner extends StatelessWidget {
+  const _StalePickBanner({
+    required this.bookedCount,
+    required this.squadSize,
+    required this.onNudge,
+  });
+  final int bookedCount;
+  final int squadSize;
+  final VoidCallback onNudge;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFB800).withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+            color: const Color(0xFFFFB800).withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Text('🤔', style: TextStyle(fontSize: 16)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'only $bookedCount of $squadSize are in for this stay',
+                style: TSTextStyles.heading(size: 14),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 6),
+          Text(
+            "the squad pick is more than a day old. nudge the holdouts, or change the pick — tap 'make this our pick' on a different hotel.",
+            style: TSTextStyles.body(size: 13, color: TSColors.text2),
+          ),
+          const SizedBox(height: 10),
+          Row(children: [
+            InkWell(
+              onTap: onNudge,
+              borderRadius: BorderRadius.circular(999),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: TSColors.s2,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: TSColors.border),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.notifications_outlined,
+                      size: 12, color: TSColors.text2),
+                  const SizedBox(width: 5),
+                  Text('nudge holdouts',
+                      style: TSTextStyles.label(
+                          color: TSColors.text2, size: 11)),
+                ]),
+              ),
+            ),
+          ]),
+        ],
+      ),
     );
   }
 }

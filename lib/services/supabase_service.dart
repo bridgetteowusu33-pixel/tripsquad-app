@@ -2435,6 +2435,11 @@ class BookingService {
   /// Squad-self-reported "I booked this." Insert OR update the existing
   /// row (UNIQUE per trip+user+kind). recommendationId is set when
   /// confirming a specific accommodation rec; null for flights.
+  ///
+  /// When recommendationId names a hotel rec, we look it up to enrich
+  /// the trip_event with the hotel name + current confirm count, so
+  /// the squad sees "Tasha is in for Casa Mariana — 4 of 6 confirmed"
+  /// instead of a generic "accommodation locked in" copy.
   Future<void> recordBookingConfirmation({
     required String tripId,
     required String kind,
@@ -2454,11 +2459,51 @@ class BookingService {
       'notes': notes,
     }, onConflict: 'trip_id,user_id,kind');
 
-    // Fan out to the squad chat — same pattern as other "moment"
-    // events. Best-effort; don't fail the confirm if the event
-    // insert fails. The fan_out_trip_event trigger creates a
-    // notification per squad member (excluding the actor), and the
-    // existing send_push webhook delivers FCM pushes.
+    // Compose the per-confirm push body. Tries to enrich with the
+    // recommendation's name + an updated "N of M confirmed" tally
+    // when this is a per-hotel accommodation confirm.
+    String title = kind == 'flight'
+        ? '✈️ flight locked in'
+        : '🏨 accommodation locked in';
+    String body = kind == 'flight'
+        ? "the squad is closer to actually going. tap to see who's left."
+        : "we have a place to sleep. tap to see who's left to book.";
+
+    if (kind == 'accommodation' && recommendationId != null) {
+      try {
+        final rec = await _db
+            .from('trip_recommendations')
+            .select('name')
+            .eq('id', recommendationId)
+            .maybeSingle();
+        final hotelName = rec?['name'] as String?;
+        // For small squads (typical N ≤ 10) selecting all rows is
+        // cheaper than fighting with Supabase count headers.
+        final confirmRows = await _db
+            .from('booking_confirmations')
+            .select('user_id')
+            .eq('trip_id', tripId)
+            .eq('kind', 'accommodation')
+            .eq('recommendation_id', recommendationId);
+        final n = (confirmRows as List).length;
+        final squadRows = await _db
+            .from('squad_members')
+            .select('user_id')
+            .eq('trip_id', tripId)
+            .not('user_id', 'is', null);
+        final m = (squadRows as List).length;
+        if (hotelName != null && hotelName.isNotEmpty) {
+          title = '🏨 $hotelName — locked in';
+          body = m > 0
+              ? '$n of $m confirmed for this stay'
+              : '$n confirmed for this stay';
+        }
+      } catch (_) {
+        // Enrichment is best-effort — fall through to the generic
+        // copy if any of the lookups fail.
+      }
+    }
+
     try {
       await _db.from('trip_events').insert({
         'trip_id': tripId,
@@ -2467,12 +2512,47 @@ class BookingService {
             : 'accommodation_booked',
         'actor_user_id': uid,
         'payload': {
-          'title': kind == 'flight'
-              ? '✈️ flight locked in'
-              : '🏨 accommodation locked in',
-          'body': kind == 'flight'
-              ? "the squad is closer to actually going. tap to see who's left."
-              : "we have a place to sleep. tap to see who's left to book.",
+          'title': title,
+          'body': body,
+          if (recommendationId != null) 'recommendation_id': recommendationId,
+        },
+      });
+    } catch (_) { /* non-fatal */ }
+  }
+
+  /// Host-only: designate one of Scout's hotel recommendations as the
+  /// squad's accommodation pick. Updates trips.squad_pick_accommodation_id
+  /// and fires a `squad_pick_set` trip_event so the existing fan-out +
+  /// push pipeline broadcasts "🎯 we're staying at Casa Mariana".
+  /// RLS on trips already enforces host-only writes.
+  Future<void> setSquadPick({
+    required String tripId,
+    required String recommendationId,
+  }) async {
+    // Pull the rec name first so the push has it.
+    final rec = await _db
+        .from('trip_recommendations')
+        .select('name')
+        .eq('id', recommendationId)
+        .maybeSingle();
+    final hotelName = (rec?['name'] as String?) ?? 'a place';
+
+    await _db.from('trips').update({
+      'squad_pick_accommodation_id': recommendationId,
+      'squad_pick_set_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', tripId);
+
+    try {
+      await _db.from('trip_events').insert({
+        'trip_id': tripId,
+        'kind': 'squad_pick_set',
+        // Null actor so the host gets the push too — the moment is
+        // worth a confirmation for them.
+        'actor_user_id': null,
+        'payload': {
+          'title': '🎯 squad stay locked in: $hotelName',
+          'body': "tap to confirm you're in — or pick somewhere else.",
+          'recommendation_id': recommendationId,
         },
       });
     } catch (_) { /* non-fatal */ }

@@ -33,7 +33,10 @@ mixin _$Trip {
   String? get selectedDestination => throw _privateConstructorUsedError;
   String? get selectedFlag => throw _privateConstructorUsedError;
   int? get estimatedBudget => throw _privateConstructorUsedError;
-  String? get coverPhotoUrl => throw _privateConstructorUsedError;
+  String? get coverPhotoUrl =>
+      throw _privateConstructorUsedError; // v1.2 Phase 2.5 — host-designated squad accommodation pick
+  String? get squadPickAccommodationId => throw _privateConstructorUsedError;
+  DateTime? get squadPickSetAt => throw _privateConstructorUsedError;
   List<SquadMember> get squadMembers => throw _privateConstructorUsedError;
   List<TripOption> get options => throw _privateConstructorUsedError;
   ItineraryDay? get itinerary => throw _privateConstructorUsedError;
@@ -65,6 +68,8 @@ abstract class $TripCopyWith<$Res> {
       String? selectedFlag,
       int? estimatedBudget,
       String? coverPhotoUrl,
+      String? squadPickAccommodationId,
+      DateTime? squadPickSetAt,
       List<SquadMember> squadMembers,
       List<TripOption> options,
       ItineraryDay? itinerary,
@@ -101,6 +106,8 @@ class _$TripCopyWithImpl<$Res, $Val extends Trip>
     Object? selectedFlag = freezed,
     Object? estimatedBudget = freezed,
     Object? coverPhotoUrl = freezed,
+    Object? squadPickAccommodationId = freezed,
+    Object? squadPickSetAt = freezed,
     Object? squadMembers = null,
     Object? options = null,
     Object? itinerary = freezed,
@@ -164,6 +171,14 @@ class _$TripCopyWithImpl<$Res, $Val extends Trip>
           ? _value.coverPhotoUrl
           : coverPhotoUrl // ignore: cast_nullable_to_non_nullable
               as String?,
+      squadPickAccommodationId: freezed == squadPickAccommodationId
+          ? _value.squadPickAccommodationId
+          : squadPickAccommodationId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      squadPickSetAt: freezed == squadPickSetAt
+          ? _value.squadPickSetAt
+          : squadPickSetAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
       squadMembers: null == squadMembers
           ? _value.squadMembers
           : squadMembers // ignore: cast_nullable_to_non_nullable
@@ -222,6 +237,8 @@ abstract class _$$TripImplCopyWith<$Res> implements $TripCopyWith<$Res> {
       String? selectedFlag,
       int? estimatedBudget,
       String? coverPhotoUrl,
+      String? squadPickAccommodationId,
+      DateTime? squadPickSetAt,
       List<SquadMember> squadMembers,
       List<TripOption> options,
       ItineraryDay? itinerary,
@@ -256,6 +273,8 @@ class __$$TripImplCopyWithImpl<$Res>
     Object? selectedFlag = freezed,
     Object? estimatedBudget = freezed,
     Object? coverPhotoUrl = freezed,
+    Object? squadPickAccommodationId = freezed,
+    Object? squadPickSetAt = freezed,
     Object? squadMembers = null,
     Object? options = null,
     Object? itinerary = freezed,
@@ -319,6 +338,14 @@ class __$$TripImplCopyWithImpl<$Res>
           ? _value.coverPhotoUrl
           : coverPhotoUrl // ignore: cast_nullable_to_non_nullable
               as String?,
+      squadPickAccommodationId: freezed == squadPickAccommodationId
+          ? _value.squadPickAccommodationId
+          : squadPickAccommodationId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      squadPickSetAt: freezed == squadPickSetAt
+          ? _value.squadPickSetAt
+          : squadPickSetAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
       squadMembers: null == squadMembers
           ? _value._squadMembers
           : squadMembers // ignore: cast_nullable_to_non_nullable
@@ -361,6 +388,8 @@ class _$TripImpl implements _Trip {
       this.selectedFlag,
       this.estimatedBudget,
       this.coverPhotoUrl,
+      this.squadPickAccommodationId,
+      this.squadPickSetAt,
       final List<SquadMember> squadMembers = const [],
       final List<TripOption> options = const [],
       this.itinerary,
@@ -411,6 +440,11 @@ class _$TripImpl implements _Trip {
   final int? estimatedBudget;
   @override
   final String? coverPhotoUrl;
+// v1.2 Phase 2.5 — host-designated squad accommodation pick
+  @override
+  final String? squadPickAccommodationId;
+  @override
+  final DateTime? squadPickSetAt;
   final List<SquadMember> _squadMembers;
   @override
   @JsonKey()
@@ -438,7 +472,7 @@ class _$TripImpl implements _Trip {
 
   @override
   String toString() {
-    return 'Trip(id: $id, hostId: $hostId, name: $name, mode: $mode, status: $status, inviteToken: $inviteToken, vibes: $vibes, startDate: $startDate, endDate: $endDate, durationDays: $durationDays, selectedDestination: $selectedDestination, selectedFlag: $selectedFlag, estimatedBudget: $estimatedBudget, coverPhotoUrl: $coverPhotoUrl, squadMembers: $squadMembers, options: $options, itinerary: $itinerary, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Trip(id: $id, hostId: $hostId, name: $name, mode: $mode, status: $status, inviteToken: $inviteToken, vibes: $vibes, startDate: $startDate, endDate: $endDate, durationDays: $durationDays, selectedDestination: $selectedDestination, selectedFlag: $selectedFlag, estimatedBudget: $estimatedBudget, coverPhotoUrl: $coverPhotoUrl, squadPickAccommodationId: $squadPickAccommodationId, squadPickSetAt: $squadPickSetAt, squadMembers: $squadMembers, options: $options, itinerary: $itinerary, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -467,6 +501,11 @@ class _$TripImpl implements _Trip {
                 other.estimatedBudget == estimatedBudget) &&
             (identical(other.coverPhotoUrl, coverPhotoUrl) ||
                 other.coverPhotoUrl == coverPhotoUrl) &&
+            (identical(
+                    other.squadPickAccommodationId, squadPickAccommodationId) ||
+                other.squadPickAccommodationId == squadPickAccommodationId) &&
+            (identical(other.squadPickSetAt, squadPickSetAt) ||
+                other.squadPickSetAt == squadPickSetAt) &&
             const DeepCollectionEquality()
                 .equals(other._squadMembers, _squadMembers) &&
             const DeepCollectionEquality().equals(other._options, _options) &&
@@ -496,6 +535,8 @@ class _$TripImpl implements _Trip {
         selectedFlag,
         estimatedBudget,
         coverPhotoUrl,
+        squadPickAccommodationId,
+        squadPickSetAt,
         const DeepCollectionEquality().hash(_squadMembers),
         const DeepCollectionEquality().hash(_options),
         itinerary,
@@ -533,6 +574,8 @@ abstract class _Trip implements Trip {
       final String? selectedFlag,
       final int? estimatedBudget,
       final String? coverPhotoUrl,
+      final String? squadPickAccommodationId,
+      final DateTime? squadPickSetAt,
       final List<SquadMember> squadMembers,
       final List<TripOption> options,
       final ItineraryDay? itinerary,
@@ -569,6 +612,10 @@ abstract class _Trip implements Trip {
   int? get estimatedBudget;
   @override
   String? get coverPhotoUrl;
+  @override // v1.2 Phase 2.5 — host-designated squad accommodation pick
+  String? get squadPickAccommodationId;
+  @override
+  DateTime? get squadPickSetAt;
   @override
   List<SquadMember> get squadMembers;
   @override

@@ -27,6 +27,9 @@ class Trip with _$Trip {
     String? selectedFlag,
     int? estimatedBudget,
     String? coverPhotoUrl,
+    // v1.2 Phase 2.5 — host-designated squad accommodation pick
+    String? squadPickAccommodationId,
+    DateTime? squadPickSetAt,
     @Default([]) List<SquadMember> squadMembers,
     @Default([]) List<TripOption> options,
     ItineraryDay? itinerary,

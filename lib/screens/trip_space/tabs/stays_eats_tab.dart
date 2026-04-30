@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/errors.dart';
 import '../../../core/haptics.dart';
 import '../../../core/theme.dart';
 import '../../../models/models.dart';
 import '../../../providers/providers.dart';
+import '../../../services/supabase_service.dart';
 import '../widgets/area_hero_card.dart';
 import '../widgets/recommendation_card.dart';
 
@@ -45,6 +47,88 @@ class _StaysEatsTabState extends ConsumerState<StaysEatsTab> {
       // surfaces naturally if the user later pull-to-refreshes.
     } finally {
       if (mounted) setState(() => _regenerating = false);
+    }
+  }
+
+  /// Host-only: designate a hotel rec as the squad's accommodation
+  /// pick. Updates trips.squad_pick_accommodation_id and fires a
+  /// `squad_pick_set` push to the squad. Confirm via dialog so the
+  /// host doesn't pick by accident — this is a coordination moment.
+  Future<void> _setSquadPick(String recommendationId, String hotelName) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: TSColors.bg,
+        title: Text('make $hotelName the squad stay?',
+            style: TSTextStyles.heading(size: 17)),
+        content: Text(
+          "the squad gets a push: 'we're staying at $hotelName.' members can confirm they're in or pick somewhere else.",
+          style: TSTextStyles.body(color: TSColors.text2, size: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('cancel',
+                style: TSTextStyles.label(color: TSColors.text2, size: 13)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('lock it in',
+                style: TSTextStyles.label(color: TSColors.lime, size: 13)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await ref.read(bookingServiceProvider).setSquadPick(
+            tripId: widget.trip.id,
+            recommendationId: recommendationId,
+          );
+      if (mounted) {
+        TSHaptics.success();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🎯 squad stay locked in: $hotelName'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(humanizeError(e))),
+        );
+      }
+    }
+  }
+
+  /// Tie a booking_confirmation to a specific hotel rec so the
+  /// group-stay tracker counts squadmates per hotel. Called from the
+  /// "I'm staying here" button on each Stays + Eats hotel card.
+  /// Re-tapping replaces the prior recommendation_id (UNIQUE constraint
+  /// on trip+user+kind makes this an upsert).
+  Future<void> _markBookedAtHotel(String recommendationId) async {
+    try {
+      await ref.read(bookingServiceProvider).recordBookingConfirmation(
+            tripId: widget.trip.id,
+            kind: 'accommodation',
+            recommendationId: recommendationId,
+          );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('locked in ✦'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(humanizeError(e))),
+        );
+      }
     }
   }
 
@@ -159,18 +243,25 @@ class _StaysEatsTabState extends ConsumerState<StaysEatsTab> {
         // Group-stay tracker context: count squad members who've
         // confirmed each hotel rec, plus the squad size for the
         // "N of M" denominator. Watching here so cards re-render
-        // as confirmations land in real time.
+        // as confirmations land in real time. Also track which rec
+        // (if any) the current user is booked into, so we render the
+        // "you're staying here" state on the right card.
         final confirmsAsync =
             ref.watch(bookingConfirmationsProvider(widget.trip.id));
         final lockinAsync =
             ref.watch(tripLockinStatusProvider(widget.trip.id));
+        final meUid = Supabase.instance.client.auth.currentUser?.id;
         final bookedByRec = <String, int>{};
+        String? myAccommodationRecId;
         confirmsAsync.whenData((list) {
           for (final c in list) {
             if (c.kind == BookingKind.accommodation &&
                 c.recommendationId != null) {
               bookedByRec.update(c.recommendationId!, (n) => n + 1,
                   ifAbsent: () => 1);
+              if (c.userId == meUid) {
+                myAccommodationRecId = c.recommendationId;
+              }
             }
           }
         });
@@ -210,15 +301,61 @@ class _StaysEatsTabState extends ConsumerState<StaysEatsTab> {
                     label: 'no stays picked yet',
                     body: 'pull down to ask scout',
                   )
-                else
-                  for (var i = 0; i < hotels.length; i++) ...[
-                    RecommendationCard(
-                      rec: hotels[i],
-                      bookedCount: bookedByRec[hotels[i].id] ?? 0,
-                      squadSize: squadSize,
-                    ).animate().fadeIn(delay: (i * 40).ms),
-                    const SizedBox(height: 12),
-                  ],
+                else ...[
+                  () {
+                    // Re-order so the squad pick (if any) is first
+                    // and the alternatives follow under their own
+                    // subheader.
+                    final pickId = widget.trip.squadPickAccommodationId;
+                    final iAmHost =
+                        meUid != null && widget.trip.hostId == meUid;
+                    final pick = pickId == null
+                        ? null
+                        : hotels.firstWhereOrNull((h) => h.id == pickId);
+                    final ordered = <TripRecommendation>[];
+                    if (pick != null) ordered.add(pick);
+                    ordered.addAll(hotels.where((h) => h.id != pickId));
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (var i = 0; i < ordered.length; i++) ...[
+                          // Once the squad pick exists, drop a
+                          // subheader before the alternatives chunk.
+                          if (pick != null && i == 1) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'alternatives',
+                              style: TSTextStyles.label(
+                                  color: TSColors.muted, size: 11),
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                          RecommendationCard(
+                            rec: ordered[i],
+                            bookedCount: bookedByRec[ordered[i].id] ?? 0,
+                            squadSize: squadSize,
+                            iAmBookedHere:
+                                myAccommodationRecId == ordered[i].id,
+                            squadPickState: pickId == null
+                                ? SquadPickState.none
+                                : (ordered[i].id == pickId
+                                    ? SquadPickState.thisIsThePick
+                                    : SquadPickState.pickIsElsewhere),
+                            iAmHost: iAmHost,
+                            onMarkBookedHere: () =>
+                                _markBookedAtHotel(ordered[i].id),
+                            onSetSquadPick: iAmHost && pickId == null
+                                ? () => _setSquadPick(
+                                    ordered[i].id, ordered[i].name)
+                                : null,
+                          ).animate().fadeIn(delay: (i * 40).ms),
+                          const SizedBox(height: 12),
+                        ],
+                      ],
+                    );
+                  }(),
+                ],
               ] else ...[
                 if (restaurants.isEmpty)
                   _NoneInScope(

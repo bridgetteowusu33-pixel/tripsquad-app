@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 import 'package:app_settings/app_settings.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -118,12 +119,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onTap: () =>
                     AppSettings.openAppSettings(type: AppSettingsType.notification),
               ),
-              _Tile(
-                icon: '🔧',
-                label: 'diagnose push',
-                subtitle: 'run the full token-register flow + show result',
-                onTap: () => _diagnosePush(context),
-              ),
+              // Diagnostic tool — debug builds only. Real users in
+              // TestFlight + App Store don't see this. If a user
+              // reports push issues, ask them to install a debug
+              // build OR dispatch the same diagnostic from a hidden
+              // long-press elsewhere (future polish).
+              if (kDebugMode)
+                _Tile(
+                  icon: '🔧',
+                  label: 'diagnose push',
+                  subtitle: 'run the full token-register flow + show result',
+                  onTap: () => _diagnosePush(context),
+                ),
 
               _section('units'),
               const _TempUnitRow(),
